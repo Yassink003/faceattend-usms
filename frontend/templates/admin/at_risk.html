@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Décrochage Scolaire{% endblock %}
+{% block page_title %}Étudiants en Décrochage{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <h2><i class="fas fa-triangle-exclamation" style="color:var(--danger);margin-right:8px"></i>
+    Détection de décrochage
+  </h2>
+  <form method="GET" style="display:flex;align-items:center;gap:8px">
+    <label style="font-size:.8rem;color:var(--text-2)">Seuil :</label>
+    <input type="number" name="threshold" value="{{ threshold }}" min="0" max="100"
+           style="width:70px;padding:6px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.85rem;outline:none"/>
+    <span style="color:var(--text-3);font-size:.8rem">%</span>
+    <button type="submit" class="btn btn--sm btn--ghost">Appliquer</button>
+  </form>
+</div>
+
+{% if at_risk %}
+<div class="card card--glow" style="border-color:rgba(255,77,109,.2);padding:0;margin-bottom:20px">
+  <div style="padding:16px 24px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:.875rem;color:var(--text-2)">
+      <strong style="color:var(--danger)">{{ at_risk|length }}</strong> étudiant(s) sous le seuil de <strong>{{ threshold }}%</strong>
+    </span>
+    <a href="{{ url_for('admin.export_report') }}" class="btn btn--sm btn--ghost">
+      <i class="fas fa-file-excel"></i> Exporter
+    </a>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Étudiant</th><th>Matricule</th><th>Filière</th>
+          <th>Présences</th><th>Absences</th><th>Taux</th><th>Risque</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in at_risk %}
+        {% set s = item.student %}
+        {% set st = item.stats %}
+        <tr>
+          <td><strong>{{ s.full_name }}</strong></td>
+          <td><code style="font-family:var(--font-mono);color:var(--accent-2);font-size:.8rem">{{ s.student_number }}</code></td>
+          <td>{{ s.program or '—' }}</td>
+          <td style="color:var(--accent)">{{ st.present }}</td>
+          <td style="color:var(--danger)">{{ st.absent }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;min-width:120px">
+              <div class="progress" style="flex:1">
+                <div class="progress__bar" style="width:{{ st.rate }}%;background:{% if st.rate < 50 %}var(--danger){% elif st.rate < 70 %}linear-gradient(90deg,var(--warning),#e0a030){% else %}linear-gradient(90deg,var(--accent),var(--accent-2)){% endif %}"></div>
+              </div>
+              <span style="font-family:var(--font-mono);font-size:.78rem;color:{% if st.rate < 50 %}var(--danger){% elif st.rate < 70 %}var(--warning){% else %}var(--accent){% endif %}">{{ st.rate }}%</span>
+            </div>
+          </td>
+          <td>
+            {% if st.rate < 50 %}
+              <span class="risk-indicator risk-indicator--high"><i class="fas fa-circle-exclamation"></i> Critique</span>
+            {% elif st.rate < 60 %}
+              <span class="risk-indicator risk-indicator--medium"><i class="fas fa-triangle-exclamation"></i> Élevé</span>
+            {% else %}
+              <span class="risk-indicator risk-indicator--medium"><i class="fas fa-circle-info"></i> Modéré</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:60px">
+  <i class="fas fa-circle-check" style="font-size:3rem;color:var(--accent);margin-bottom:16px;display:block"></i>
+  <h3 style="font-family:var(--font-head);margin-bottom:8px">Aucun décrochage détecté</h3>
+  <p style="color:var(--text-2)">Tous les étudiants ont un taux de présence ≥ {{ threshold }}%</p>
+</div>
+{% endif %}
+{% endblock %}

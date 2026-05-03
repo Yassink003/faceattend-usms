@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Justifications{% endblock %}
+{% block page_title %}Justifications d'Absence{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <h2><i class="fas fa-file-circle-check" style="color:var(--accent);margin-right:8px"></i>
+    En attente de validation
+  </h2>
+  <span class="badge badge--warning">{{ pending|length }} en attente</span>
+</div>
+
+{% if pending %}
+<div style="display:flex;flex-direction:column;gap:14px">
+  {% for j in pending %}
+  <div class="card" style="border-color:rgba(255,179,71,.15)">
+    <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <strong>{{ j.attendance.student.full_name }}</strong>
+          <code style="font-family:var(--font-mono);font-size:.75rem;color:var(--accent-2)">
+            {{ j.attendance.student.student_number }}
+          </code>
+          <span class="badge badge--warning">En attente</span>
+        </div>
+        <div style="font-size:.82rem;color:var(--text-2);margin-bottom:8px">
+          <i class="fas fa-book-open" style="margin-right:4px"></i>
+          {{ j.attendance.session.course.name }} —
+          {{ j.attendance.session.started_at.strftime('%d/%m/%Y à %H:%M') }}
+        </div>
+        <div style="font-size:.875rem;background:var(--bg-3);padding:10px 14px;border-radius:var(--radius);color:var(--text-2);border-left:3px solid rgba(255,179,71,.4)">
+          "{{ j.reason }}"
+        </div>
+        <div style="font-size:.75rem;color:var(--text-3);margin-top:6px">
+          Soumis le {{ j.submitted_at.strftime('%d/%m/%Y à %H:%M') }}
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:220px">
+        <form method="POST" action="{{ url_for('teacher.review_justification', jid=j.id) }}">
+          <input type="hidden" name="action" value="approve"/>
+          <textarea name="note" placeholder="Note optionnelle…"
+                    style="width:100%;padding:8px 12px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.8rem;resize:vertical;min-height:60px;margin-bottom:8px;outline:none"></textarea>
+          <div style="display:flex;gap:8px">
+            <button type="submit" class="btn btn--primary btn--sm" style="flex:1">
+              <i class="fas fa-check"></i> Approuver
+            </button>
+            <button type="button" class="btn btn--danger btn--sm" style="flex:1"
+                    onclick="this.closest('form').querySelector('[name=action]').value='reject';this.closest('form').submit()">
+              <i class="fas fa-xmark"></i> Rejeter
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:60px">
+  <i class="fas fa-inbox" style="font-size:3rem;color:var(--text-3);display:block;margin-bottom:12px"></i>
+  <h3 style="font-family:var(--font-head);margin-bottom:8px">Aucune justification en attente</h3>
+  <p style="color:var(--text-2);font-size:.875rem">Toutes les justifications ont été traitées.</p>
+</div>
+{% endif %}
+{% endblock %}

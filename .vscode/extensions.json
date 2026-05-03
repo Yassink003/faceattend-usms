@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-python.black-formatter",
+    "wholroyd.jinja",
+    "samuelcolvin.jinjahtml",
+    "ms-python.pylint",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+    "ckolkman.vscode-postgres",
+    "donjayamanne.githistory",
+    "christian-kohler.path-intellisense",
+    "streetsidesoftware.code-spell-checker-french"
+  ]
+}

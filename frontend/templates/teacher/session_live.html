@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Séance Live #{{ session.id }}{% endblock %}
+{% block page_title %}Séance Live — {{ session.course.name }}{% endblock %}
+
+{% block content %}
+<div class="live-grid">
+
+  <!-- ── Camera feed ────────────────────────────────── -->
+  <div>
+    <div class="video-card" style="margin-bottom:16px">
+      <div class="video-card__header">
+        <div class="live-dot"></div>
+        <span style="font-family:var(--font-mono);font-size:.8rem;color:var(--accent)">LIVE</span>
+        <span style="font-size:.85rem;color:var(--text-2);margin-left:4px">
+          {{ session.course.name }} — {{ session.room or 'Salle non définie' }}
+        </span>
+        <span style="margin-left:auto;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3)">
+          Séance #{{ session.id }}
+        </span>
+      </div>
+
+      {% if not session.is_closed %}
+      <img src="{{ url_for('camera.video_stream', session_id=session.id) }}"
+           class="video-feed" alt="Flux caméra"
+           onerror="this.src='';this.style.display='none';document.getElementById('cam-err').style.display='flex'"/>
+      <div id="cam-err" style="display:none;align-items:center;justify-content:center;height:240px;flex-direction:column;gap:8px;color:var(--text-3)">
+        <i class="fas fa-camera-slash" style="font-size:2rem"></i>
+        <span style="font-size:.85rem">Caméra non disponible — Mode manuel actif</span>
+      </div>
+      {% else %}
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;flex-direction:column;gap:8px;color:var(--text-3)">
+        <i class="fas fa-lock" style="font-size:2rem;color:var(--text-3)"></i>
+        <span style="font-size:.85rem">Séance terminée</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Stats bar -->
+    <div class="card" style="margin-bottom:16px;padding:16px 20px">
+      <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-family:var(--font-head);font-size:1.6rem;color:var(--accent)" id="stat-present">{{ session.present_count }}</div>
+          <div style="font-size:.72rem;color:var(--text-2)">PRÉSENTS</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:var(--font-head);font-size:1.6rem;color:var(--danger)" id="stat-absent">{{ session.absent_count }}</div>
+          <div style="font-size:.72rem;color:var(--text-2)">ABSENTS</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:var(--font-head);font-size:1.6rem;color:var(--text-2)" id="stat-total">{{ session.attendances.count() }}</div>
+          <div style="font-size:.72rem;color:var(--text-2)">TOTAL</div>
+        </div>
+        <div style="flex:1;min-width:160px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:.75rem;color:var(--text-2)">Taux de présence</span>
+            <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--accent)" id="presence-pct">
+              {% if session.attendances.count() > 0 %}{{ (session.present_count / session.attendances.count() * 100)|round|int }}%{% else %}0%{% endif %}
+            </span>
+          </div>
+          <div class="progress">
+            <div class="progress__bar" id="presence-bar"
+                 style="width:{% if session.attendances.count() > 0 %}{{ (session.present_count / session.attendances.count() * 100)|round|int }}{% else %}0{% endif %}%">
+            </div>
+          </div>
+        </div>
+
+        {% if not session.is_closed %}
+        <form method="POST" action="{{ url_for('teacher.close_session', session_id=session.id) }}"
+              onsubmit="return confirm('Fermer la séance ? Cette action est irréversible.')">
+          <button type="submit" class="btn btn--danger btn--sm">
+            <i class="fas fa-stop-circle"></i> Clôturer
+          </button>
+        </form>
+        <a href="{{ url_for('teacher.export_session', session_id=session.id) }}" class="btn btn--ghost btn--sm">
+          <i class="fas fa-file-excel"></i> Exporter
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Attendance list ────────────────────────────── -->
+  <div class="card" style="padding:0;height:fit-content;max-height:680px;overflow:hidden;display:flex;flex-direction:column">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:.85rem;font-weight:600">Liste de présence</span>
+      <span class="badge badge--teacher">Temps réel</span>
+    </div>
+    <div style="overflow-y:auto;flex:1">
+      {% for student in students %}
+      {% set att = attendances.get(student.id) %}
+      <div class="presence-item presence-item--{{ att.status.value if att else 'absent' }}"
+           data-student="{{ student.id }}"
+           style="margin:6px 10px;padding:10px 12px">
+        <div class="avatar" style="width:30px;height:30px;font-size:.75rem">
+          {{ student.first_name[0] }}{{ student.last_name[0] }}
+        </div>
+        <div style="flex:1;overflow:hidden">
+          <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            {{ student.full_name }}
+          </div>
+          <div style="font-family:var(--font-mono);font-size:.68rem;color:var(--text-3)">
+            {{ student.student_number }}
+            {% if att and att.detected_at %}
+              · <span class="detect-time">{{ att.detected_at.strftime('%H:%M') }}</span>
+              {% if att.confidence %} · <span class="confidence">{{ (att.confidence * 100)|round|int }}%</span>{% endif %}
+            {% endif %}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span class="badge badge--{{ att.status.value if att else 'absent' }} status-badge">
+            {{ (att.status.value if att else 'absent')|capitalize }}
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not session.is_closed %}
+<script>
+  // Start camera encoding cache + start live polling
+  fetch('/api/camera/start/{{ session.id }}', { method: 'POST' });
+  window.startLivePolling({{ session.id }}, 3000);
+</script>
+{% endif %}
+{% endblock %}

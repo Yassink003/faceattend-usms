@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion{% endblock %}
+
+{% block auth_content %}
+<div class="login-root">
+
+  <!-- Left panel — brand -->
+  <div class="login-brand">
+    <div class="login-brand__inner">
+      <div class="login-brand__logo">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <rect width="56" height="56" rx="14" fill="url(#lg)"/>
+          <circle cx="28" cy="22" r="9" stroke="#00f5a0" stroke-width="2" fill="none"/>
+          <path d="M12 48c0-8.8 7.2-16 16-16s16 7.2 16 16" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="38" cy="16" r="3" fill="#00f5a0"/>
+          <path d="M36 14l4 4M40 14l-4 4" stroke="#0d1b2a" stroke-width="1.5" stroke-linecap="round"/>
+          <defs><linearGradient id="lg" x1="0" y1="0" x2="56" y2="56"><stop stop-color="#0d1b2a"/><stop offset="1" stop-color="#112233"/></linearGradient></defs>
+        </svg>
+      </div>
+      <h1 class="login-brand__title">FaceAttend</h1>
+      <p class="login-brand__sub">Système intelligent de gestion des présences par reconnaissance faciale</p>
+
+      <div class="login-brand__features">
+        <div class="feature-chip"><i class="fas fa-shield-halved"></i> Chiffrement AES-256-GCM</div>
+        <div class="feature-chip"><i class="fas fa-camera"></i> Détection temps réel</div>
+        <div class="feature-chip"><i class="fas fa-gavel"></i> Conforme CNDP</div>
+        <div class="feature-chip"><i class="fas fa-chart-line"></i> Analytics avancés</div>
+      </div>
+
+      <div class="login-brand__scan">
+        <!-- Animated scan lines decoration -->
+        <div class="scan-face">
+          <div class="scan-face__outline"></div>
+          <div class="scan-line"></div>
+          <div class="scan-dots">
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel — form -->
+  <div class="login-form-panel">
+    <div class="login-card">
+      <div class="login-card__header">
+        <h2>Connexion</h2>
+        <p>Accédez à votre espace personnalisé</p>
+      </div>
+
+      <!-- Role tabs -->
+      <div class="role-tabs" id="roleTabs">
+        <button class="role-tab active" data-role="admin"   onclick="setRole(this,'admin')">
+          <i class="fas fa-user-shield"></i> Admin
+        </button>
+        <button class="role-tab" data-role="teacher" onclick="setRole(this,'teacher')">
+          <i class="fas fa-chalkboard-teacher"></i> Enseignant
+        </button>
+        <button class="role-tab" data-role="student" onclick="setRole(this,'student')">
+          <i class="fas fa-user-graduate"></i> Étudiant
+        </button>
+      </div>
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert alert--{{ category }} alert--compact">
+            <i class="fas fa-exclamation-circle"></i> {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}" class="login-form" autocomplete="off">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
+
+        <div class="form-group">
+          <label for="email">Adresse e-mail</label>
+          <div class="input-icon-wrap">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="email" name="email" placeholder="exemple@usms.ac.ma"
+                   required autocomplete="email"/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <div class="input-icon-wrap">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" name="password" placeholder="••••••••"
+                   required autocomplete="current-password"/>
+            <button type="button" class="toggle-pw" onclick="togglePw()">
+              <i class="fas fa-eye" id="pwIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="checkbox-label">
+            <input type="checkbox" name="remember"/>
+            <span>Se souvenir de moi</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-login" id="loginBtn">
+          <span>Se connecter</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <p class="login-card__note">
+        <i class="fas fa-info-circle"></i>
+        Pas d'auto-inscription. Contactez l'administration pour créer votre compte.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+function setRole(el, role) {
+  document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  // Visual hint only — actual auth is email-based
+  const hints = {
+    admin:   'admin@usms.ac.ma',
+    teacher: 'enseignant@usms.ac.ma',
+    student: 'etudiant@usms.ac.ma',
+  };
+  document.getElementById('email').placeholder = hints[role];
+}
+
+function togglePw() {
+  const pw   = document.getElementById('password');
+  const icon = document.getElementById('pwIcon');
+  if (pw.type === 'password') { pw.type = 'text'; icon.className = 'fas fa-eye-slash'; }
+  else { pw.type = 'password'; icon.className = 'fas fa-eye'; }
+}
+
+// Animate scan line
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('loginBtn');
+  btn.closest('form').addEventListener('submit', () => {
+    btn.innerHTML = '<span>Connexion…</span><i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+  });
+});
+</script>
+{% endblock %}

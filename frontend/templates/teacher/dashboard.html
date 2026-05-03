@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Enseignant{% endblock %}
+{% block page_title %}Espace Enseignant{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:24px">
+  <h2 style="font-family:var(--font-head);font-size:1.4rem">
+    Bonjour, <span style="color:var(--accent)">{{ teacher.full_name }}</span>
+  </h2>
+  <p style="color:var(--text-2);font-size:.9rem">{{ teacher.department or '' }}</p>
+</div>
+
+<!-- ── Active sessions alert ────────────────────────── -->
+{% if active_sessions %}
+<div class="alert alert--warning" style="margin:0 0 20px">
+  <i class="fas fa-video"></i>
+  <strong>{{ active_sessions|length }}</strong> séance(s) en cours —
+  {% for s in active_sessions %}
+    <a href="{{ url_for('teacher.session_live', session_id=s.id) }}" style="color:var(--warning)">{{ s.course.name }}</a>{% if not loop.last %}, {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <!-- Open new session -->
+  <div class="card card--glow">
+    <div class="section-header">
+      <h2><i class="fas fa-play-circle" style="color:var(--accent);margin-right:8px"></i>Ouvrir une séance</h2>
+    </div>
+    <form method="POST" action="{{ url_for('teacher.open_session') }}">
+      <div class="form-group" style="margin-bottom:14px">
+        <label style="display:block;font-size:.8rem;color:var(--text-2);margin-bottom:6px">Cours</label>
+        <select name="course_id" required
+                style="width:100%;padding:10px 14px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.9rem;outline:none">
+          <option value="">— Sélectionner —</option>
+          {% for course in courses %}
+            <option value="{{ course.id }}">{{ course.code }} — {{ course.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:14px">
+        <label style="display:block;font-size:.8rem;color:var(--text-2);margin-bottom:6px">Salle</label>
+        <input type="text" name="room" placeholder="ex: Amphi A, Salle 201…"
+               style="width:100%;padding:10px 14px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.9rem;outline:none"/>
+      </div>
+      <div class="form-group" style="margin-bottom:18px">
+        <label style="display:block;font-size:.8rem;color:var(--text-2);margin-bottom:6px">Seuil retard (min)</label>
+        <input type="number" name="late_threshold" value="15" min="5" max="60"
+               style="width:100%;padding:10px 14px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.9rem;outline:none"/>
+      </div>
+      <button type="submit" class="btn btn--primary" style="width:100%">
+        <i class="fas fa-camera"></i> Démarrer la séance
+      </button>
+    </form>
+  </div>
+
+  <!-- Courses overview -->
+  <div class="card">
+    <div class="section-header">
+      <h2><i class="fas fa-book-open" style="color:var(--accent-2);margin-right:8px"></i>Mes cours</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      {% for course in courses %}
+      <div style="padding:12px 16px;background:var(--bg-3);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-weight:600;font-size:.9rem">{{ course.name }}</div>
+          <div style="font-family:var(--font-mono);font-size:.73rem;color:var(--accent-2)">{{ course.code }}</div>
+        </div>
+        <div style="text-align:right;font-size:.8rem;color:var(--text-2)">
+          {{ course.sessions.count() }} séances
+        </div>
+      </div>
+      {% else %}
+      <p style="color:var(--text-3);font-size:.875rem">Aucun cours assigné.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

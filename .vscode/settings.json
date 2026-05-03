@@ -1,0 +1,33 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
+  "editor.formatOnSave": true,
+  "python.formatting.provider": "black",
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "venv": true,
+    ".env": false
+  },
+  "emmet.includeLanguages": {
+    "jinja-html": "html"
+  },
+  "files.associations": {
+    "*.html": "jinja-html"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "terminal.integrated.env.windows": {
+    "FLASK_APP": "run.py",
+    "FLASK_ENV": "development"
+  },
+  "terminal.integrated.env.linux": {
+    "FLASK_APP": "run.py",
+    "FLASK_ENV": "development"
+  },
+  "terminal.integrated.env.osx": {
+    "FLASK_APP": "run.py",
+    "FLASK_ENV": "development"
+  }
+}

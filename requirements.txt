@@ -1,0 +1,59 @@
+# ════════════════════════════════════════════════════════════
+#  FaceAttend — requirements.txt  (MTCNN + FaceNet-128)
+#  Python 3.10 ou 3.11 recommandé
+#  Installer dans l'ordre : pip install -r requirements.txt
+# ════════════════════════════════════════════════════════════
+
+# ─── Web Framework ───────────────────────────────────────────
+Flask==3.0.3
+flask-login==0.6.3
+flask-sqlalchemy==3.1.1
+flask-migrate==4.0.7
+flask-cors==5.0.0
+flask-limiter==3.8.0
+flask-wtf==1.2.1
+
+# ─── Database — PostgreSQL ───────────────────────────────────
+SQLAlchemy==2.0.35
+psycopg2-binary==2.9.9
+alembic==1.13.3
+
+# ─── Authentication & Security ───────────────────────────────
+PyJWT==2.9.0
+bcrypt==4.2.0
+cryptography==43.0.1
+
+# ─── Reconnaissance faciale — MTCNN + FaceNet-128 ────────────
+# Remplace dlib / face_recognition (plus d'installation de cmake/dlib)
+#
+# ORDRE D'INSTALLATION IMPORTANT :
+#   1. tensorflow (backend FaceNet)
+#   2. mtcnn
+#   3. keras-facenet
+#   4. opencv-python
+#   5. Pillow / numpy
+#
+tensorflow==2.15.1        # ou tensorflow-cpu==2.15.1 si pas de GPU
+mtcnn==0.1.1              # détecteur de visages CNN
+keras-facenet==0.3.2      # embeddings FaceNet-128D pré-entraînés
+opencv-python==4.10.0.84  # traitement image / caméra
+Pillow==10.4.0
+numpy==1.26.4
+
+# ─── Data & Reporting ────────────────────────────────────────
+pandas==2.2.3
+openpyxl==3.1.5
+xlsxwriter==3.2.0
+
+# ─── Config & Environment ────────────────────────────────────
+python-dotenv==1.0.1
+
+# ─── Logging ─────────────────────────────────────────────────
+loguru==0.7.2
+
+# ─── Utils ───────────────────────────────────────────────────
+python-dateutil==2.9.0
+pytz==2024.2
+Werkzeug==3.0.4
+click==8.1.7
+imutils==0.5.4

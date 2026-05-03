@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: faceattend_db
+    environment:
+      POSTGRES_DB:       facial_attendance_db
+      POSTGRES_USER:     attendance_user
+      POSTGRES_PASSWORD: strongpassword
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U attendance_user -d facial_attendance_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ───────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: faceattend_redis
+    ports:
+      - "6379:6379"
+
+  # ── Flask App ───────────────────────────────────────────
+  app:
+    build: .
+    container_name: faceattend_app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      FLASK_ENV:        production
+      DATABASE_URL:     postgresql://attendance_user:strongpassword@db:5432/facial_attendance_db
+      REDIS_URL:        redis://redis:6379/0
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:

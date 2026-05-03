@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Mon Tableau de Bord{% endblock %}
+{% block page_title %}Mon Espace Étudiant{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:24px;display:flex;align-items:center;gap:16px">
+  <div class="avatar" style="width:52px;height:52px;font-size:1.2rem">
+    {{ student.first_name[0] }}{{ student.last_name[0] }}
+  </div>
+  <div>
+    <h2 style="font-family:var(--font-head);font-size:1.3rem">{{ student.full_name }}</h2>
+    <div style="font-size:.82rem;color:var(--text-2)">
+      <code style="font-family:var(--font-mono);color:var(--accent-2)">{{ student.student_number }}</code>
+      {% if student.program %} · {{ student.program }}{% endif %}
+      {% if student.year_of_study %} · Année {{ student.year_of_study }}{% endif %}
+    </div>
+  </div>
+  {% if not student.face_encoding_enc %}
+  <div class="alert alert--warning" style="margin:0;margin-left:auto">
+    <i class="fas fa-triangle-exclamation"></i>
+    Votre visage n'est pas encore enrôlé. Contactez l'administration.
+  </div>
+  {% endif %}
+</div>
+
+<!-- Stats -->
+<div class="stats-grid" style="margin-bottom:24px">
+  <div class="stat-card" style="--accent-color:#00f5a0">
+    <div class="stat-card__icon"><i class="fas fa-calendar-check"></i></div>
+    <div class="stat-card__value">{{ stats.present }}</div>
+    <div class="stat-card__label">Présences</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#ff4d6d">
+    <div class="stat-card__icon" style="background:rgba(255,77,109,.1)"><i class="fas fa-calendar-xmark"></i></div>
+    <div class="stat-card__value">{{ stats.absent }}</div>
+    <div class="stat-card__label">Absences</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#00c8ff">
+    <div class="stat-card__icon" style="background:rgba(0,200,255,.1)"><i class="fas fa-file-circle-check"></i></div>
+    <div class="stat-card__value">{{ stats.excused }}</div>
+    <div class="stat-card__label">Justifiées</div>
+  </div>
+  <div class="stat-card" style="--accent-color:{% if stats.rate >= 80 %}#00f5a0{% elif stats.rate >= 60 %}#ffb347{% else %}#ff4d6d{% endif %}">
+    <div class="stat-card__icon" style="background:rgba({% if stats.rate >= 80 %}0,245,160{% elif stats.rate >= 60 %}255,179,71{% else %}255,77,109{% endif %},.1)">
+      <i class="fas fa-percent"></i>
+    </div>
+    <div class="stat-card__value" style="color:{% if stats.rate >= 80 %}var(--accent){% elif stats.rate >= 60 %}var(--warning){% else %}var(--danger){% endif %}">
+      {{ stats.rate }}%
+    </div>
+    <div class="stat-card__label">Taux de présence</div>
+  </div>
+</div>
+
+{% if stats.at_risk %}
+<div class="alert alert--danger" style="margin:0 0 20px">
+  <i class="fas fa-triangle-exclamation"></i>
+  <strong>Attention :</strong> Votre taux de présence est inférieur à 70 %. Vous risquez d'être exclu des examens. Contactez votre responsable pédagogique.
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <!-- Recent attendance -->
+  <div class="card" style="padding:0">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border-2);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:600;font-size:.9rem">Dernières séances</span>
+      <a href="{{ url_for('student.history') }}" style="font-size:.78rem;color:var(--accent-2)">Voir tout →</a>
+    </div>
+    <div>
+      {% for att in recent %}
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border-2)">
+        <span class="badge badge--{{ att.status.value }}">{{ att.status.value|capitalize }}</span>
+        <div style="flex:1">
+          <div style="font-size:.82rem;font-weight:500">{{ att.session.course.name }}</div>
+          <div style="font-size:.73rem;color:var(--text-3)">
+            {{ att.session.started_at.strftime('%d/%m/%Y · %H:%M') }}
+          </div>
+        </div>
+        {% if att.status.value == 'absent' and not att.justification %}
+        <a href="{{ url_for('student.justify', attendance_id=att.id) }}"
+           class="btn btn--sm btn--outline" style="font-size:.72rem;padding:4px 8px">
+          Justifier
+        </a>
+        {% elif att.justification %}
+        <span class="badge badge--{% if att.justification.status.value == 'approved' %}present{% elif att.justification.status.value == 'rejected' %}absent{% else %}teacher{% endif %}">
+          {{ att.justification.status.value }}
+        </span>
+        {% endif %}
+      </div>
+      {% else %}
+      <div style="text-align:center;padding:40px;color:var(--text-3);font-size:.875rem">
+        Aucune séance enregistrée.
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Doughnut chart -->
+  <div class="card">
+    <div class="section-header"><h2>Répartition des présences</h2></div>
+    <canvas id="presenceChart" height="220"></canvas>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const canvas = document.getElementById('presenceChart');
+if (canvas) {
+  new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: ['Présences', 'Absences', 'Justifiées'],
+      datasets: [{
+        data: [{{ stats.present }}, {{ stats.absent }}, {{ stats.excused }}],
+        backgroundColor: ['rgba(0,245,160,.7)', 'rgba(255,77,109,.7)', 'rgba(0,200,255,.7)'],
+        borderColor: ['var(--bg-card)','var(--bg-card)','var(--bg-card)'],
+        borderWidth: 3,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      cutout: '72%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#8ba3c0', font: { size: 12 }, padding: 16 }
+        }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

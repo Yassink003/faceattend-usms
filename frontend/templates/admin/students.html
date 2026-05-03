@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Étudiants{% endblock %}
+{% block page_title %}Gestion des Étudiants{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <h2>Liste des étudiants</h2>
+  <div style="display:flex;gap:8px">
+    <form method="GET" style="display:flex;gap:8px">
+      <div class="input-icon-wrap" style="flex:1">
+        <i class="fas fa-search"></i>
+        <input type="text" name="q" value="{{ search }}" placeholder="Rechercher…" style="padding:8px 12px 8px 36px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.85rem;outline:none;min-width:220px"/>
+      </div>
+      <button type="submit" class="btn btn--ghost btn--sm">Rechercher</button>
+    </form>
+  </div>
+</div>
+
+<div class="card" style="padding:0">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Matricule</th><th>Nom complet</th><th>Filière</th>
+          <th>Année</th><th>Groupe</th><th>Visage</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in pagination.items %}
+        <tr>
+          <td><code style="font-family:var(--font-mono);color:var(--accent);font-size:.8rem">{{ student.student_number }}</code></td>
+          <td><strong>{{ student.full_name }}</strong></td>
+          <td>{{ student.program or '—' }}</td>
+          <td>{{ student.year_of_study or '—' }}</td>
+          <td>{{ student.group_name or '—' }}</td>
+          <td>
+            {% if student.face_encoding_enc %}
+              <span class="badge badge--present"><i class="fas fa-check"></i> Enrôlé</span>
+            {% else %}
+              <span class="badge badge--absent"><i class="fas fa-xmark"></i> Non enrôlé</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="#" class="btn btn--sm btn--ghost">
+              <i class="fas fa-chart-line"></i> Stats
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:40px">Aucun étudiant trouvé.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+  {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=3) %}
+    {% if page_num %}
+      <a href="?page={{ page_num }}{% if search %}&q={{ search }}{% endif %}"
+         class="btn btn--sm {% if page_num == pagination.page %}btn--primary{% else %}btn--ghost{% endif %}">
+        {{ page_num }}
+      </a>
+    {% else %}
+      <span style="color:var(--text-3);padding:6px">…</span>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

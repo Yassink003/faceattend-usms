@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Historique{% endblock %}
+{% block page_title %}Mon Historique de Présences{% endblock %}
+
+{% block content %}
+<div class="card" style="padding:0">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border-2)">
+    <span style="font-weight:600">Toutes mes séances</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Cours</th><th>Date & heure</th><th>Statut</th><th>Méthode</th><th>Justification</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for att in pagination.items %}
+        <tr>
+          <td>
+            <div style="font-weight:500;font-size:.875rem">{{ att.session.course.name }}</div>
+            <div style="font-family:var(--font-mono);font-size:.72rem;color:var(--accent-2)">{{ att.session.course.code }}</div>
+          </td>
+          <td style="font-family:var(--font-mono);font-size:.8rem">
+            {{ att.session.started_at.strftime('%d/%m/%Y') }}<br>
+            <span style="color:var(--text-3)">{{ att.session.started_at.strftime('%H:%M') }}</span>
+          </td>
+          <td><span class="badge badge--{{ att.status.value }}">{{ att.status.value|capitalize }}</span></td>
+          <td style="color:var(--text-3);font-size:.8rem">
+            {% if att.method == 'face' %}
+              <i class="fas fa-camera" style="color:var(--accent-2)"></i> Facial
+              {% if att.confidence %}<span style="font-family:var(--font-mono)"> {{ (att.confidence*100)|round|int }}%</span>{% endif %}
+            {% elif att.method == 'manual' %}
+              <i class="fas fa-pen"></i> Manuel
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if att.justification %}
+              <span class="badge badge--{% if att.justification.status.value == 'approved' %}present{% elif att.justification.status.value == 'rejected' %}absent{% else %}teacher{% endif %}">
+                {{ att.justification.status.value|capitalize }}
+              </span>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            {% if att.status.value == 'absent' and not att.justification %}
+            <a href="{{ url_for('student.justify', attendance_id=att.id) }}" class="btn btn--sm btn--outline">
+              <i class="fas fa-file-pen"></i> Justifier
+            </a>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:40px">Aucune séance.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if pagination.pages > 1 %}
+<div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+  {% for page_num in pagination.iter_pages() %}
+    {% if page_num %}
+      <a href="?page={{ page_num }}" class="btn btn--sm {% if page_num == pagination.page %}btn--primary{% else %}btn--ghost{% endif %}">{{ page_num }}</a>
+    {% else %}
+      <span style="color:var(--text-3);padding:6px">…</span>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

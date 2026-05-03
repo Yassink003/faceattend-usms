@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}FaceAttend{% endblock %} — Système de Présences</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}"/>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<!-- ── Sidebar ─────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar__brand">
+    <span class="sidebar__logo">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill="url(#grad)"/>
+        <circle cx="16" cy="13" r="5" stroke="white" stroke-width="1.8" fill="none"/>
+        <path d="M8 26c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M22 10l2-2M24 10l-2-2" stroke="#00f5a0" stroke-width="1.5" stroke-linecap="round"/>
+        <defs><linearGradient id="grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop stop-color="#0d1b2a"/><stop offset="1" stop-color="#1a2f45"/></linearGradient></defs>
+      </svg>
+    </span>
+    <span class="sidebar__name">FaceAttend</span>
+  </div>
+
+  <nav class="sidebar__nav">
+    {% if current_user.role.value == 'admin' %}
+      <a href="{{ url_for('admin.dashboard') }}"   class="nav-item {% if 'dashboard' in request.path %}active{% endif %}"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a>
+      <a href="{{ url_for('admin.students') }}"    class="nav-item {% if 'students' in request.path %}active{% endif %}"><i class="fas fa-users"></i><span>Étudiants</span></a>
+      <a href="{{ url_for('admin.at_risk') }}"     class="nav-item {% if 'at-risk' in request.path %}active{% endif %}"><i class="fas fa-triangle-exclamation"></i><span>Décrochage</span></a>
+      <a href="{{ url_for('admin.export_report')}}"class="nav-item"><i class="fas fa-file-excel"></i><span>Export Global</span></a>
+    {% elif current_user.role.value == 'teacher' %}
+      <a href="{{ url_for('teacher.dashboard') }}"      class="nav-item {% if request.endpoint=='teacher.dashboard' %}active{% endif %}"><i class="fas fa-gauge-high"></i><span>Dashboard</span></a>
+      <a href="{{ url_for('teacher.justifications') }}" class="nav-item {% if 'justifications' in request.path %}active{% endif %}"><i class="fas fa-file-circle-check"></i><span>Justifications</span></a>
+    {% else %}
+      <a href="{{ url_for('student.dashboard') }}"class="nav-item {% if request.endpoint=='student.dashboard' %}active{% endif %}"><i class="fas fa-gauge-high"></i><span>Mon Tableau</span></a>
+      <a href="{{ url_for('student.history') }}"  class="nav-item {% if 'history' in request.path %}active{% endif %}"><i class="fas fa-calendar-days"></i><span>Historique</span></a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar__footer">
+    <div class="sidebar__user">
+      <div class="avatar">{{ current_user.email[0].upper() }}</div>
+      <div class="sidebar__user-info">
+        <span class="sidebar__user-email">{{ current_user.email }}</span>
+        <span class="sidebar__user-role badge badge--{{ current_user.role.value }}">{{ current_user.role.value }}</span>
+      </div>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Déconnexion">
+      <i class="fas fa-arrow-right-from-bracket"></i>
+    </a>
+  </div>
+</aside>
+
+<!-- ── Main ───────────────────────────────────────────── -->
+<main class="main-content">
+  <header class="topbar">
+    <button class="topbar__toggle" onclick="document.getElementById('sidebar').classList.toggle('collapsed')">
+      <i class="fas fa-bars"></i>
+    </button>
+    <h1 class="topbar__title">{% block page_title %}{% endblock %}</h1>
+    <div class="topbar__right">
+      <span class="topbar__time" id="clock"></span>
+    </div>
+  </header>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert--{{ category }}">
+        <i class="fas fa-{% if category=='success' %}check-circle{% elif category=='danger' %}exclamation-circle{% elif category=='warning' %}triangle-exclamation{% else %}info-circle{% endif %}"></i>
+        {{ message }}
+        <button onclick="this.parentElement.remove()" class="alert__close">×</button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="page-body">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+{% else %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

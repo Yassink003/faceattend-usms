@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Admin{% endblock %}
+{% block page_title %}Tableau de bord Administration{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- ── Stats Cards ─────────────────────────────────────── -->
+<div class="stats-grid">
+  <div class="stat-card" style="--accent-color:#00f5a0">
+    <div class="stat-card__icon"><i class="fas fa-users"></i></div>
+    <div class="stat-card__value">{{ stats.total_students }}</div>
+    <div class="stat-card__label">Étudiants inscrits</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#00c8ff">
+    <div class="stat-card__icon" style="background:rgba(0,200,255,.1)"><i class="fas fa-chalkboard-teacher"></i></div>
+    <div class="stat-card__value">{{ stats.total_teachers }}</div>
+    <div class="stat-card__label">Enseignants</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#7c5cfc">
+    <div class="stat-card__icon" style="background:rgba(124,92,252,.1)"><i class="fas fa-book-open"></i></div>
+    <div class="stat-card__value">{{ stats.total_courses }}</div>
+    <div class="stat-card__label">Cours actifs</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#ffb347">
+    <div class="stat-card__icon" style="background:rgba(255,179,71,.1)"><i class="fas fa-video"></i></div>
+    <div class="stat-card__value">{{ stats.active_sessions }}</div>
+    <div class="stat-card__label">Séances en cours</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#00f5a0">
+    <div class="stat-card__icon"><i class="fas fa-face-smile"></i></div>
+    <div class="stat-card__value">{{ stats.enrolled_faces }}</div>
+    <div class="stat-card__label">Visages enrôlés</div>
+  </div>
+  <div class="stat-card" style="--accent-color:#ff4d6d">
+    <div class="stat-card__icon" style="background:rgba(255,77,109,.1)"><i class="fas fa-triangle-exclamation"></i></div>
+    <div class="stat-card__value">{{ stats.at_risk_count }}</div>
+    <div class="stat-card__label">Étudiants en décrochage</div>
+  </div>
+</div>
+
+<!-- ── Charts + Actions ───────────────────────────────── -->
+<div class="grid-2" style="margin-bottom:24px">
+  <div class="card card--glow">
+    <div class="section-header">
+      <h2><i class="fas fa-chart-bar" style="color:var(--accent);margin-right:8px"></i>Taux de présence par cours</h2>
+    </div>
+    <canvas id="attendanceChart" height="220"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="section-header">
+      <h2><i class="fas fa-bolt" style="color:var(--accent-2);margin-right:8px"></i>Actions rapides</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <a href="{{ url_for('admin.students') }}"    class="btn btn--ghost"><i class="fas fa-users"></i> Gérer les étudiants</a>
+      <a href="{{ url_for('admin.at_risk') }}"     class="btn btn--ghost" style="color:var(--warning);border-color:rgba(255,179,71,.3)"><i class="fas fa-triangle-exclamation"></i> Voir décrochage</a>
+      <a href="{{ url_for('admin.export_report')}}"class="btn btn--ghost" style="color:var(--accent);border-color:var(--border)"><i class="fas fa-file-excel"></i> Exporter rapport global</a>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border-2);margin:20px 0"/>
+
+    <div class="section-header" style="margin-bottom:12px">
+      <h2 style="font-size:.95rem">Conformité CNDP</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;color:var(--text-2)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-check-circle" style="color:var(--accent)"></i>
+        Chiffrement AES-256-GCM actif
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-check-circle" style="color:var(--accent)"></i>
+        Pseudonymisation des données biométriques
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-check-circle" style="color:var(--accent)"></i>
+        Droit à l'oubli (soft delete)
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <i class="fas fa-check-circle" style="color:var(--accent)"></i>
+        Journal d'audit complet
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Recent Students at Risk ───────────────────────── -->
+{% if stats.at_risk_count > 0 %}
+<div class="card" style="border-color:rgba(255,77,109,.2)">
+  <div class="section-header">
+    <h2><i class="fas fa-triangle-exclamation" style="color:var(--danger);margin-right:8px"></i>Alertes décrochage</h2>
+    <a href="{{ url_for('admin.at_risk') }}" class="btn btn--sm btn--ghost">Voir tout</a>
+  </div>
+  <p style="color:var(--text-2);font-size:.875rem">
+    <strong style="color:var(--danger)">{{ stats.at_risk_count }}</strong> étudiant(s) ont un taux de présence inférieur à 70 %.
+    <a href="{{ url_for('admin.at_risk') }}" style="color:var(--accent-2)">Consulter la liste →</a>
+  </p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+fetch('/admin/api/stats')
+  .then(r => r.json())
+  .then(data => {
+    const labels = data.courses.map(c => c.course);
+    const values = data.courses.map(c => c.rate);
+    window.renderAttendanceChart('attendanceChart', labels, values);
+  });
+</script>
+{% endblock %}
