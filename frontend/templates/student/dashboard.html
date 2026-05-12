@@ -29,23 +29,23 @@
 
 <!-- Stats -->
 <div class="stats-grid" style="margin-bottom:24px">
-  <div class="stat-card" style="--accent-color:#00f5a0">
+  <div class="stat-card" style="--accent-color:#059669">
     <div class="stat-card__icon"><i class="fas fa-calendar-check"></i></div>
     <div class="stat-card__value">{{ stats.present }}</div>
     <div class="stat-card__label">Présences</div>
   </div>
-  <div class="stat-card" style="--accent-color:#ff4d6d">
-    <div class="stat-card__icon" style="background:rgba(255,77,109,.1)"><i class="fas fa-calendar-xmark"></i></div>
+  <div class="stat-card" style="--accent-color:#dc2626">
+    <div class="stat-card__icon" style="background:rgba(220,38,38,.12)"><i class="fas fa-calendar-xmark"></i></div>
     <div class="stat-card__value">{{ stats.absent }}</div>
     <div class="stat-card__label">Absences</div>
   </div>
-  <div class="stat-card" style="--accent-color:#00c8ff">
-    <div class="stat-card__icon" style="background:rgba(0,200,255,.1)"><i class="fas fa-file-circle-check"></i></div>
+  <div class="stat-card" style="--accent-color:#0284c7">
+    <div class="stat-card__icon" style="background:rgba(2,132,199,.12)"><i class="fas fa-file-circle-check"></i></div>
     <div class="stat-card__value">{{ stats.excused }}</div>
     <div class="stat-card__label">Justifiées</div>
   </div>
-  <div class="stat-card" style="--accent-color:{% if stats.rate >= 80 %}#00f5a0{% elif stats.rate >= 60 %}#ffb347{% else %}#ff4d6d{% endif %}">
-    <div class="stat-card__icon" style="background:rgba({% if stats.rate >= 80 %}0,245,160{% elif stats.rate >= 60 %}255,179,71{% else %}255,77,109{% endif %},.1)">
+  <div class="stat-card" style="--accent-color:{% if stats.rate >= 80 %}#059669{% elif stats.rate >= 60 %}#d97706{% else %}#dc2626{% endif %}">
+    <div class="stat-card__icon" style="background:rgba({% if stats.rate >= 80 %}5,150,105{% elif stats.rate >= 60 %}217,119,6{% else %}220,38,38{% endif %},.12)">
       <i class="fas fa-percent"></i>
     </div>
     <div class="stat-card__value" style="color:{% if stats.rate >= 80 %}var(--accent){% elif stats.rate >= 60 %}var(--warning){% else %}var(--danger){% endif %}">
@@ -99,39 +99,31 @@
   </div>
 
   <!-- Doughnut chart -->
-  <div class="card">
-    <div class="section-header"><h2>Répartition des présences</h2></div>
-    <canvas id="presenceChart" height="220"></canvas>
+  <div class="card chart-panel" style="box-shadow:var(--shadow)">
+    <div class="chart-panel__head" style="border-bottom:1px solid var(--border-2)">
+      <div class="chart-panel__title">
+        <span class="chart-panel__icon"><i class="fas fa-chart-pie"></i></span>
+        <div>
+          <h3 style="margin:0;font-size:1.05rem">Votre répartition</h3>
+          <p style="margin:4px 0 0;font-size:.78rem;color:var(--text-3)">Présences détectées, absences et justifications validées</p>
+        </div>
+      </div>
+      <span class="chart-panel__scanline"><i class="fas fa-user-check"></i> Espace étudiant</span>
+    </div>
+    <div class="chart-panel__body" style="min-height:240px">
+      <canvas id="presenceChart" height="220" aria-label="Répartition présences"></canvas>
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-const canvas = document.getElementById('presenceChart');
-if (canvas) {
-  new Chart(canvas, {
-    type: 'doughnut',
-    data: {
-      labels: ['Présences', 'Absences', 'Justifiées'],
-      datasets: [{
-        data: [{{ stats.present }}, {{ stats.absent }}, {{ stats.excused }}],
-        backgroundColor: ['rgba(0,245,160,.7)', 'rgba(255,77,109,.7)', 'rgba(0,200,255,.7)'],
-        borderColor: ['var(--bg-card)','var(--bg-card)','var(--bg-card)'],
-        borderWidth: 3,
-        hoverOffset: 8,
-      }]
-    },
-    options: {
-      cutout: '72%',
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#8ba3c0', font: { size: 12 }, padding: 16 }
-        }
-      }
-    }
-  });
-}
+(function () {
+  var c = document.getElementById('presenceChart');
+  if (c && typeof renderStudentPresenceDonut === 'function') {
+    renderStudentPresenceDonut('presenceChart', {{ stats.present|int }}, {{ stats.absent|int }}, {{ stats.excused|int }});
+  }
+})();
 </script>
 {% endblock %}

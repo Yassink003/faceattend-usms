@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Nouveau Professeur{% endblock %}
+{% block page_title %}Créer un Professeur{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.form-grid .full-width { grid-column:1/-1; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-group label { font-size:.8rem; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:.06em; }
+.form-group label .required { color:var(--danger); margin-left:2px; }
+.form-control { background:var(--bg-2); border:1px solid var(--border-2); border-radius:var(--radius); color:var(--text); font-size:.9rem; padding:10px 14px; outline:none; transition:border-color .2s,box-shadow .2s; width:100%; }
+.form-control:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--focus-ring); }
+.form-control::placeholder { color:var(--text-3); }
+.section-divider { grid-column:1/-1; display:flex; align-items:center; gap:12px; margin:8px 0 4px; }
+.section-divider span { font-family:var(--font-head); font-size:.8rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; white-space:nowrap; }
+.section-divider hr { flex:1; border:none; border-top:1px solid var(--border-2); }
+.hint { font-size:.75rem; color:var(--text-3); margin-top:2px; }
+.form-actions { display:flex; align-items:center; gap:12px; justify-content:flex-end; padding-top:8px; border-top:1px solid var(--border-2); margin-top:24px; }
+.password-wrap { position:relative; }
+.password-wrap .form-control { padding-right:44px; }
+.password-toggle { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-3); cursor:pointer; font-size:.9rem; padding:4px; transition:color .2s; }
+.password-toggle:hover { color:var(--accent); }
+.strength-bar { height:3px; border-radius:2px; background:var(--bg-3); margin-top:6px; overflow:hidden; }
+.strength-bar-inner { height:100%; border-radius:2px; transition:width .3s,background .3s; width:0%; }
+.strength-label { font-size:.72rem; margin-top:3px; color:var(--text-3); }
+.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-2); font-size:.85rem; text-decoration:none; margin-bottom:20px; transition:color .2s; }
+.back-link:hover { color:var(--accent); }
+.pwd-rules { margin-top:10px; display:flex; flex-direction:column; gap:4px; }
+.pwd-rule { font-size:.75rem; color:var(--text-3); transition:color .2s; }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('admin.teachers') }}" class="back-link">
+  <i class="fas fa-arrow-left"></i> Retour à la liste
+</a>
+
+<div class="card" style="max-width:860px;margin:0 auto">
+  <div style="padding:24px 28px 0">
+    <h2 style="font-family:var(--font-head);font-size:1.2rem;color:var(--accent);margin-bottom:4px">
+      <i class="fas fa-chalkboard-user" style="margin-right:8px"></i>Nouveau professeur
+    </h2>
+    <p style="color:var(--text-3);font-size:.85rem">
+      Le compte de connexion et le profil enseignant seront créés simultanément.
+    </p>
+  </div>
+
+  <form method="POST" action="{{ url_for('admin.create_teacher') }}" style="padding:24px 28px">
+
+    <div class="form-grid">
+
+      <!-- Identité -->
+      <div class="section-divider">
+        <span><i class="fas fa-id-card" style="margin-right:6px"></i>Identité</span><hr>
+      </div>
+
+      <div class="form-group">
+        <label>Prénom <span class="required">*</span></label>
+        <input name="first_name" class="form-control" placeholder="ex : Mohammed"
+               value="{{ form_data.first_name if form_data else '' }}" required>
+      </div>
+
+      <div class="form-group">
+        <label>Nom <span class="required">*</span></label>
+        <input name="last_name" class="form-control" placeholder="ex : Alami"
+               value="{{ form_data.last_name if form_data else '' }}" required>
+      </div>
+
+      <div class="form-group">
+        <label>Département</label>
+        <input name="department" class="form-control" placeholder="ex : Informatique"
+               value="{{ form_data.department if form_data else '' }}">
+      </div>
+
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input name="phone" class="form-control" placeholder="ex : 0661234567"
+               value="{{ form_data.phone if form_data else '' }}">
+      </div>
+
+      <!-- Compte de connexion -->
+      <div class="section-divider">
+        <span><i class="fas fa-lock" style="margin-right:6px"></i>Compte de connexion</span><hr>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Email <span class="required">*</span></label>
+        <input name="email" type="email" class="form-control"
+               placeholder="ex : m.alami@usms.ac.ma"
+               value="{{ form_data.email if form_data else '' }}" required>
+      </div>
+
+      <div class="form-group">
+        <label>Mot de passe <span class="required">*</span></label>
+        <div class="password-wrap">
+          <input name="password" id="pwd" type="password" class="form-control"
+                 placeholder="Min. 8 caractères" oninput="checkStrength(this.value)" required>
+          <button type="button" class="password-toggle" onclick="togglePwd('pwd',this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <div class="strength-bar"><div class="strength-bar-inner" id="strength-bar"></div></div>
+        <span class="strength-label" id="strength-label"></span>
+        <div class="pwd-rules">
+          <span class="pwd-rule" id="rule-length"><i class="fas fa-circle"></i> Au moins 8 caractères</span>
+          <span class="pwd-rule" id="rule-upper"><i class="fas fa-circle"></i> Une majuscule (A–Z)</span>
+          <span class="pwd-rule" id="rule-lower"><i class="fas fa-circle"></i> Une minuscule (a–z)</span>
+          <span class="pwd-rule" id="rule-digit"><i class="fas fa-circle"></i> Un chiffre (0–9)</span>
+          <span class="pwd-rule" id="rule-special"><i class="fas fa-circle"></i> Un caractère spécial</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Confirmer le mot de passe <span class="required">*</span></label>
+        <div class="password-wrap">
+          <input name="password_confirm" id="pwd2" type="password" class="form-control"
+                 placeholder="Répéter le mot de passe" required>
+          <button type="button" class="password-toggle" onclick="togglePwd('pwd2',this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Matières assignées -->
+      {% if courses %}
+      <div class="section-divider">
+        <span><i class="fas fa-book-open" style="margin-right:6px"></i>Assigner des matières</span><hr>
+      </div>
+      <div class="full-width">
+        <p class="hint" style="margin-bottom:10px">Cours à affecter à ce professeur (optionnel — modifiable plus tard).</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">
+          {% for c in courses %}
+          <label style="display:flex;align-items:flex-start;gap:10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:border-color .2s">
+            <input type="checkbox" name="course_ids" value="{{ c.id }}"
+                   style="accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0"
+                   {% if form_data and c.id|string in form_data.getlist('course_ids') %}checked{% endif %}>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <strong style="font-size:.85rem">{{ c.name }}</strong>
+              <code style="font-size:.7rem;color:var(--accent-2);background:rgba(14,165,233,.1);padding:1px 6px;border-radius:4px;align-self:flex-start">{{ c.code }}</code>
+              <small style="font-size:.75rem;color:var(--text-3)">{{ c.room or 'Salle N/A' }}</small>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('admin.teachers') }}" class="btn btn--ghost">
+        <i class="fas fa-xmark"></i> Annuler
+      </a>
+      <button type="submit" class="btn btn--primary">
+        <i class="fas fa-chalkboard-user"></i> Créer le professeur
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePwd(id, btn) {
+  const input = document.getElementById(id);
+  const isText = input.type === 'text';
+  input.type = isText ? 'password' : 'text';
+  btn.querySelector('i').className = isText ? 'fas fa-eye' : 'fas fa-eye-slash';
+}
+function checkStrength(val) {
+  const bar = document.getElementById('strength-bar');
+  const label = document.getElementById('strength-label');
+  const checks = { length:/^.{8,}$/.test(val), upper:/[A-Z]/.test(val), lower:/[a-z]/.test(val), digit:/[0-9]/.test(val), special:/[^A-Za-z0-9]/.test(val) };
+  Object.keys(checks).forEach(k => {
+    const el = document.getElementById('rule-'+k);
+    if (!el) return;
+    el.style.color = checks[k] ? 'var(--accent)' : 'var(--text-3)';
+    el.querySelector('i').className = checks[k] ? 'fas fa-circle-check' : 'fas fa-circle';
+  });
+  const score = Object.values(checks).filter(Boolean).length;
+  const levels = [
+    {pct:'0%',color:'transparent',text:''},
+    {pct:'20%',color:'#dc2626',text:'Très faible'},
+    {pct:'40%',color:'#dc2626',text:'Faible'},
+    {pct:'60%',color:'#d97706',text:'Moyen'},
+    {pct:'80%',color:'#0ea5e9',text:'Bon'},
+    {pct:'100%',color:'#2563eb',text:'Fort ✓'},
+  ];
+  const l = levels[score];
+  bar.style.width = l.pct; bar.style.background = l.color;
+  label.textContent = l.text; label.style.color = l.color;
+}
+document.getElementById('pwd2').addEventListener('input', function() {
+  const match = this.value === document.getElementById('pwd').value && this.value.length > 0;
+  this.style.borderColor = this.value.length === 0 ? 'var(--border-2)' : match ? 'var(--accent)' : 'var(--danger)';
+});
+document.querySelector('form').addEventListener('submit', function(e) {
+  const pwd = document.getElementById('pwd').value;
+  const pwd2 = document.getElementById('pwd2').value;
+  const msgs = [];
+  if (pwd.length < 8)            msgs.push("au moins 8 caractères");
+  if (!/[A-Z]/.test(pwd))        msgs.push("une majuscule");
+  if (!/[a-z]/.test(pwd))        msgs.push("une minuscule");
+  if (!/[0-9]/.test(pwd))        msgs.push("un chiffre");
+  if (!/[^A-Za-z0-9]/.test(pwd)) msgs.push("un caractère spécial");
+  if (pwd !== pwd2)               msgs.push("les mots de passe doivent correspondre");
+  if (msgs.length > 0) { e.preventDefault(); alert("Mot de passe invalide :\n• " + msgs.join("\n• ")); }
+});
+</script>
+{% endblock %}

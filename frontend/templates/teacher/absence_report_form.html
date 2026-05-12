@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Nouveau Rapport d'Absence{% endblock %}
+{% block page_title %}Rapport d'Absence{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-group { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+.form-group label { font-size:.78rem; font-weight:700; color:var(--text-2);
+  text-transform:uppercase; letter-spacing:.06em; }
+.form-control { background:var(--bg-2); border:1px solid var(--border-2);
+  border-radius:var(--radius); color:var(--text); font-size:.9rem;
+  padding:10px 14px; outline:none; transition:border-color .2s; width:100%; }
+.form-control:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--focus-ring); }
+select.form-control option { background:var(--bg-2); }
+.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-2);
+  font-size:.85rem; text-decoration:none; margin-bottom:20px; }
+.back-link:hover { color:var(--accent); }
+.stat-box { background:var(--bg-2); border:1px solid var(--border-2);
+  border-radius:var(--radius); padding:16px 20px; text-align:center; }
+.stat-val { font-family:var(--font-head); font-size:2rem; font-weight:800; line-height:1; }
+.stat-lbl { font-size:.7rem; color:var(--text-3); margin-top:4px;
+  text-transform:uppercase; letter-spacing:.06em; }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('teacher.absence_reports') }}" class="back-link">
+  <i class="fas fa-arrow-left"></i> Mes rapports
+</a>
+
+<div style="max-width:860px;margin:0 auto">
+  <div class="card" style="padding:0">
+    <div style="padding:20px 26px;border-bottom:1px solid var(--border-2)">
+      <h2 style="font-family:var(--font-head);font-size:1.1rem;color:var(--accent);margin-bottom:3px">
+        <i class="fas fa-file-circle-exclamation" style="margin-right:8px"></i>
+        Nouveau rapport d'absence
+      </h2>
+      <p style="color:var(--text-3);font-size:.82rem">
+        Sélectionnez un cours et un étudiant — les statistiques sont calculées automatiquement.
+      </p>
+    </div>
+
+    <!-- Étape 1 : sélection cours + étudiant -->
+    <div style="padding:24px 26px;border-bottom:1px solid var(--border-2)">
+      <form method="GET" action="{{ url_for('teacher.absence_report_new') }}"
+            style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Cours <span style="color:var(--danger)">*</span></label>
+          <select name="course_id" class="form-control" required>
+            <option value="" disabled {% if not course_id %}selected{% endif %}>Choisir un cours…</option>
+            {% for c in courses %}
+            <option value="{{ c.id }}" {% if course_id == c.id %}selected{% endif %}>
+              {{ c.name }} ({{ c.code }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Étudiant <span style="color:var(--danger)">*</span></label>
+          <select name="student_id" class="form-control" required
+                  {% if not course_id %}disabled{% endif %}>
+            <option value="" disabled {% if not student_id %}selected{% endif %}>
+              {% if not course_id %}Choisir un cours d'abord{% else %}Choisir un étudiant…{% endif %}
+            </option>
+            {% for s in students %}
+            <option value="{{ s.id }}" {% if student_id == s.id %}selected{% endif %}>
+              {{ s.full_name }} — {{ s.student_number }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn--ghost" style="padding:10px 18px">
+          <i class="fas fa-calculator"></i> Calculer
+        </button>
+      </form>
+    </div>
+
+    <!-- Étape 2 : statistiques calculées -->
+    {% if stats %}
+    <div style="padding:24px 26px;border-bottom:1px solid var(--border-2)">
+      <p style="font-size:.8rem;color:var(--text-3);margin-bottom:16px;text-transform:uppercase;letter-spacing:.06em;font-weight:700">
+        Statistiques calculées automatiquement
+      </p>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+        <div class="stat-box">
+          <div class="stat-val" style="color:var(--text-2)">{{ stats.nb_seances }}</div>
+          <div class="stat-lbl">Séances total</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:var(--danger)">{{ stats.nb_absences }}</div>
+          <div class="stat-lbl">Absences</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" style="color:#d97706">{{ stats.nb_retards }}</div>
+          <div class="stat-lbl">Retards</div>
+        </div>
+        <div class="stat-box">
+          {% set pct = stats.taux %}
+          <div class="stat-val" style="color:{{ '#2563eb' if pct >= 75 else '#d97706' if pct >= 50 else '#dc2626' }}">
+            {{ pct }}%
+          </div>
+          <div class="stat-lbl">Taux présence</div>
+        </div>
+      </div>
+
+      <!-- Gravité détectée -->
+      {% set grav = stats.gravite.value %}
+      {% set grav_color = '#dc2626' if grav=='critique' else '#d97706' if grav=='attention' else '#0ea5e9' %}
+      <div style="padding:12px 16px;border-radius:var(--radius);border-left:3px solid {{ grav_color }};
+                  background:rgba(0,0,0,.1);display:flex;align-items:center;gap:10px">
+        <i class="fas fa-{% if grav=='critique' %}circle-exclamation{% elif grav=='attention' %}triangle-exclamation{% else %}circle-info{% endif %}"
+           style="color:{{ grav_color }};font-size:1.1rem"></i>
+        <div>
+          <strong style="color:{{ grav_color }};font-size:.85rem">
+            Gravité : {% if grav=='critique' %}CRITIQUE{% elif grav=='attention' %}ATTENTION{% else %}INFO{% endif %}
+          </strong>
+          <p style="font-size:.78rem;color:var(--text-3);margin-top:2px">
+            {% if grav=='critique' %}Taux de présence inférieur à 50% — intervention urgente recommandée.
+            {% elif grav=='attention' %}Taux de présence entre 50% et 75% — à surveiller.
+            {% else %}Taux de présence satisfaisant — rapport informatif.{% endif %}
+          </p>
+        </div>
+      </div>
+
+      <!-- Historique des séances -->
+      {% if stats.sessions %}
+      <div style="margin-top:20px">
+        <p style="font-size:.78rem;font-weight:700;color:var(--text-2);text-transform:uppercase;
+                  letter-spacing:.06em;margin-bottom:10px">Détail par séance</p>
+        <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border-2);
+                    border-radius:var(--radius)">
+          {% for s in stats.sessions %}
+          {% set att = stats.attendances.get(s.id) %}
+          {% set s_status = att.status.value if att else 'absent' %}
+          <div style="display:flex;align-items:center;justify-content:space-between;
+                      padding:8px 14px;border-bottom:1px solid var(--border-2)">
+            <span style="font-size:.8rem;color:var(--text-2)">
+              {{ s.started_at.strftime('%d/%m/%Y %H:%M') }}
+            </span>
+            <span class="badge badge--{{ s_status }}" style="font-size:.72rem">
+              {{ s_status|capitalize }}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Étape 3 : envoyer le rapport -->
+    <form method="POST" action="{{ url_for('teacher.absence_report_new') }}"
+          style="padding:24px 26px">
+      <input type="hidden" name="course_id"  value="{{ course_id }}">
+      <input type="hidden" name="student_id" value="{{ student_id }}">
+
+      <div class="form-group">
+        <label>Commentaire (optionnel)</label>
+        <textarea name="commentaire" class="form-control" rows="3"
+                  placeholder="Contexte, observations, recommandations pour l'administration…"></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;
+                  padding-top:16px;border-top:1px solid var(--border-2)">
+        <a href="{{ url_for('teacher.absence_reports') }}" class="btn btn--ghost">
+          <i class="fas fa-xmark"></i> Annuler
+        </a>
+        <button type="submit" class="btn btn--primary"
+                onclick="return confirm('Envoyer ce rapport à l\'administration ?')">
+          <i class="fas fa-paper-plane"></i> Envoyer le rapport
+        </button>
+      </div>
+    </form>
+
+    {% elif course_id %}
+    <div style="padding:40px;text-align:center;color:var(--text-3)">
+      <i class="fas fa-calendar-xmark" style="font-size:2.5rem;margin-bottom:12px;display:block"></i>
+      <p style="font-size:.85rem">Aucune séance clôturée pour ce cours — impossible de calculer les statistiques.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

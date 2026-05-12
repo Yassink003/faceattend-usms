@@ -7,7 +7,7 @@
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet"/>
 
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
@@ -19,46 +19,131 @@
 
 {% if current_user.is_authenticated %}
 <!-- ── Sidebar ─────────────────────────────────────────── -->
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar" aria-label="Navigation principale">
+  <div class="sidebar__aurora" aria-hidden="true"></div>
+  <div class="sidebar__rail" aria-hidden="true"></div>
+
   <div class="sidebar__brand">
     <span class="sidebar__logo">
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <rect width="32" height="32" rx="8" fill="url(#grad)"/>
-        <circle cx="16" cy="13" r="5" stroke="white" stroke-width="1.8" fill="none"/>
-        <path d="M8 26c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <path d="M22 10l2-2M24 10l-2-2" stroke="#00f5a0" stroke-width="1.5" stroke-linecap="round"/>
-        <defs><linearGradient id="grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop stop-color="#0d1b2a"/><stop offset="1" stop-color="#1a2f45"/></linearGradient></defs>
+        <rect width="32" height="32" rx="10" fill="url(#grad)"/>
+        <circle cx="16" cy="13" r="5" stroke="rgba(255,255,255,.95)" stroke-width="1.8" fill="none"/>
+        <path d="M8 26c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="rgba(255,255,255,.9)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <path d="M22 10l2-2M24 10l-2-2" stroke="#5eead4" stroke-width="1.5" stroke-linecap="round"/>
+        <defs><linearGradient id="grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse"><stop stop-color="#4f46e5"/><stop offset=".55" stop-color="#6366f1"/><stop offset="1" stop-color="#0d9488"/></linearGradient></defs>
       </svg>
     </span>
-    <span class="sidebar__name">FaceAttend</span>
+    <div class="sidebar__brand-text">
+      <span class="sidebar__name">FaceAttend</span>
+      <span class="sidebar__tagline">Présences intelligentes</span>
+    </div>
   </div>
 
   <nav class="sidebar__nav">
+       {# ── ADMIN ── #}
     {% if current_user.role.value == 'admin' %}
-      <a href="{{ url_for('admin.dashboard') }}"   class="nav-item {% if 'dashboard' in request.path %}active{% endif %}"><i class="fas fa-chart-pie"></i><span>Dashboard</span></a>
-      <a href="{{ url_for('admin.students') }}"    class="nav-item {% if 'students' in request.path %}active{% endif %}"><i class="fas fa-users"></i><span>Étudiants</span></a>
-      <a href="{{ url_for('admin.at_risk') }}"     class="nav-item {% if 'at-risk' in request.path %}active{% endif %}"><i class="fas fa-triangle-exclamation"></i><span>Décrochage</span></a>
-      <a href="{{ url_for('admin.export_report')}}"class="nav-item"><i class="fas fa-file-excel"></i><span>Export Global</span></a>
+
+      <a href="{{ url_for('admin.dashboard') }}"
+         class="nav-item {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+        <i class="fas fa-chart-pie"></i><span>Dashboard</span>
+      </a>
+
+      <div class="nav-separator">Utilisateurs</div>
+
+      <a href="{{ url_for('admin.students') }}"
+         class="nav-item {% if 'students' in request.path and 'edit' not in request.path %}active{% endif %}">
+        <i class="fas fa-users"></i><span>Étudiants</span>
+      </a>
+
+      <a href="{{ url_for('admin.teachers') }}"
+         class="nav-item {% if 'teachers' in request.path and 'edit' not in request.path %}active{% endif %}">
+        <i class="fas fa-chalkboard-user"></i><span>Professeurs</span>
+      </a>
+
+      <div class="nav-separator">Pédagogie</div>
+
+      <a href="{{ url_for('admin.courses') }}"
+         class="nav-item {% if 'courses' in request.path %}active{% endif %}">
+        <i class="fas fa-book-open"></i><span>Matières</span>
+      </a>
+
+      <div class="nav-separator">Suivi</div>
+
+      <a href="{{ url_for('admin.evaluations') }}"
+         class="nav-item {% if 'evaluations' in request.path %}active{% endif %}">
+        <i class="fas fa-star-half-stroke"></i><span>Évaluations</span>
+      </a>
+
+      <a href="{{ url_for('admin.absence_reports') }}"
+         class="nav-item {% if 'absence-reports' in request.path %}active{% endif %}">
+        <i class="fas fa-file-circle-exclamation"></i><span>Rapports Absence</span>
+      </a>
+
+      <a href="{{ url_for('admin.at_risk') }}"
+         class="nav-item {% if 'at-risk' in request.path %}active{% endif %}">
+        <i class="fas fa-triangle-exclamation"></i><span>Décrochage</span>
+      </a>
+
+      <div class="nav-separator">Exports</div>
+
+      <a href="{{ url_for('admin.export_report') }}" class="nav-item">
+        <i class="fas fa-file-excel"></i><span>Export Global</span>
+      </a>
+
+    {# ── TEACHER ── #}
     {% elif current_user.role.value == 'teacher' %}
-      <a href="{{ url_for('teacher.dashboard') }}"      class="nav-item {% if request.endpoint=='teacher.dashboard' %}active{% endif %}"><i class="fas fa-gauge-high"></i><span>Dashboard</span></a>
-      <a href="{{ url_for('teacher.justifications') }}" class="nav-item {% if 'justifications' in request.path %}active{% endif %}"><i class="fas fa-file-circle-check"></i><span>Justifications</span></a>
+
+      <a href="{{ url_for('teacher.dashboard') }}"
+         class="nav-item {% if request.endpoint == 'teacher.dashboard' %}active{% endif %}">
+        <i class="fas fa-gauge-high"></i><span>Dashboard</span>
+      </a>
+
+      <div class="nav-separator">Étudiants</div>
+
+      <a href="{{ url_for('teacher.evaluations') }}"
+         class="nav-item {% if 'evaluations' in request.path %}active{% endif %}">
+        <i class="fas fa-star-half-stroke"></i><span>Évaluations</span>
+      </a>
+
+      <a href="{{ url_for('teacher.absence_reports') }}"
+         class="nav-item {% if 'absence-reports' in request.path %}active{% endif %}">
+        <i class="fas fa-file-circle-exclamation"></i><span>Rapports Absence</span>
+      </a>
+
+      <div class="nav-separator">Présences</div>
+
+      <a href="{{ url_for('teacher.justifications') }}"
+         class="nav-item {% if 'justifications' in request.path %}active{% endif %}">
+        <i class="fas fa-file-circle-check"></i><span>Justifications</span>
+      </a>
+
+    {# ── STUDENT ── #}
     {% else %}
-      <a href="{{ url_for('student.dashboard') }}"class="nav-item {% if request.endpoint=='student.dashboard' %}active{% endif %}"><i class="fas fa-gauge-high"></i><span>Mon Tableau</span></a>
-      <a href="{{ url_for('student.history') }}"  class="nav-item {% if 'history' in request.path %}active{% endif %}"><i class="fas fa-calendar-days"></i><span>Historique</span></a>
+
+      <a href="{{ url_for('student.dashboard') }}"
+         class="nav-item {% if request.endpoint == 'student.dashboard' %}active{% endif %}">
+        <i class="fas fa-gauge-high"></i><span>Mon Tableau</span>
+      </a>
+
+      <a href="{{ url_for('student.history') }}"
+         class="nav-item {% if 'history' in request.path %}active{% endif %}">
+        <i class="fas fa-calendar-days"></i><span>Historique</span>
+      </a>
+
     {% endif %}
   </nav>
 
   <div class="sidebar__footer">
-    <div class="sidebar__user">
+    <div class="sidebar__user-card">
       <div class="avatar">{{ current_user.email[0].upper() }}</div>
       <div class="sidebar__user-info">
         <span class="sidebar__user-email">{{ current_user.email }}</span>
         <span class="sidebar__user-role badge badge--{{ current_user.role.value }}">{{ current_user.role.value }}</span>
       </div>
+      <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Déconnexion">
+        <i class="fas fa-arrow-right-from-bracket"></i>
+      </a>
     </div>
-    <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Déconnexion">
-      <i class="fas fa-arrow-right-from-bracket"></i>
-    </a>
   </div>
 </aside>
 
@@ -96,5 +181,6 @@
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% block extra_js %}{% endblock %}
+
 </body>
 </html>

@@ -5,14 +5,19 @@
 {% block content %}
 <div class="section-header">
   <h2>Liste des étudiants</h2>
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <form method="GET" style="display:flex;gap:8px">
       <div class="input-icon-wrap" style="flex:1">
         <i class="fas fa-search"></i>
-        <input type="text" name="q" value="{{ search }}" placeholder="Rechercher…" style="padding:8px 12px 8px 36px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.85rem;outline:none;min-width:220px"/>
+        <input type="text" name="q" value="{{ search }}" placeholder="Rechercher…"
+               style="padding:8px 12px 8px 36px;background:var(--bg-2);border:1px solid var(--border-2);
+                      border-radius:var(--radius);color:var(--text);font-size:.85rem;outline:none;min-width:220px"/>
       </div>
       <button type="submit" class="btn btn--ghost btn--sm">Rechercher</button>
     </form>
+    <a href="{{ url_for('admin.create_student') }}" class="btn-create-pill">
+      <i class="fas fa-user-plus"></i> Nouvel étudiant
+    </a>
   </div>
 </div>
 
@@ -21,33 +26,70 @@
     <table>
       <thead>
         <tr>
-          <th>Matricule</th><th>Nom complet</th><th>Filière</th>
-          <th>Année</th><th>Groupe</th><th>Visage</th><th>Actions</th>
+          <th>Matricule</th>
+          <th>Nom complet</th>
+          <th>Email</th>
+          <th>Filière</th>
+          <th>Année</th>
+          <th>Groupe</th>
+          <th>Visage</th>
+          <th>Statut</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for student in pagination.items %}
         <tr>
-          <td><code style="font-family:var(--font-mono);color:var(--accent);font-size:.8rem">{{ student.student_number }}</code></td>
+          <td>
+            <code style="font-family:var(--font-mono);color:var(--accent);font-size:.8rem">
+              {{ student.student_number }}
+            </code>
+          </td>
           <td><strong>{{ student.full_name }}</strong></td>
+          <td style="font-size:.8rem;color:var(--text-3)">{{ student.user.email }}</td>
           <td>{{ student.program or '—' }}</td>
-          <td>{{ student.year_of_study or '—' }}</td>
+          <td style="text-align:center">{{ student.year_of_study or '—' }}</td>
           <td>{{ student.group_name or '—' }}</td>
           <td>
             {% if student.face_encoding_enc %}
-              <span class="badge badge--present"><i class="fas fa-check"></i> Enrôlé</span>
+              <span class="badge badge--present">
+                <i class="fas fa-check"></i> Enrôlé
+              </span>
             {% else %}
-              <span class="badge badge--absent"><i class="fas fa-xmark"></i> Non enrôlé</span>
+              <span class="badge badge--absent">
+                <i class="fas fa-xmark"></i> Non enrôlé
+              </span>
             {% endif %}
           </td>
           <td>
-            <a href="#" class="btn btn--sm btn--ghost">
-              <i class="fas fa-chart-line"></i> Stats
+            {% if student.user.is_active %}
+              <span class="badge badge--present" style="font-size:.72rem">Actif</span>
+            {% else %}
+              <span class="badge badge--absent" style="font-size:.72rem">Inactif</span>
+            {% endif %}
+          </td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
+            <!-- Bouton Modifier — ouvre student_edit.html avec les 5 onglets -->
+            <a href="{{ url_for('admin.student_edit', student_id=student.id) }}"
+               class="btn btn--sm btn--primary"
+               title="Modifier les informations de cet étudiant">
+              <i class="fas fa-pen"></i> Modifier
+            </a>
+            <a href="#" class="btn btn--sm btn--ghost"
+               title="Statistiques de présence">
+              <i class="fas fa-chart-line"></i>
             </a>
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:40px">Aucun étudiant trouvé.</td></tr>
+        <tr>
+          <td colspan="9" style="text-align:center;color:var(--text-3);padding:40px">
+            Aucun étudiant trouvé.
+            <a href="{{ url_for('admin.create_student') }}" style="color:var(--accent)">
+              Créer le premier
+            </a>
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>

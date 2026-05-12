@@ -180,7 +180,11 @@ class Course(db.Model):
 class Enrollment(db.Model):
     """Association étudiant ↔ cours."""
     __tablename__ = "enrollments"
-    __table_args__ = (db.UniqueConstraint("student_id", "course_id"),)
+    __table_args__ = (
+    db.UniqueConstraint("student_id", "course_id"),
+    db.Index("ix_enroll_course_id",  "course_id"),
+    db.Index("ix_enroll_student_id", "student_id"),
+    )
 
     id          = db.Column(db.Integer, primary_key=True)
     student_id  = db.Column(db.Integer, db.ForeignKey("students.id"))
@@ -225,7 +229,12 @@ class Session(db.Model):
 
 class Attendance(db.Model):
     __tablename__ = "attendances"
-    __table_args__ = (db.UniqueConstraint("session_id", "student_id"),)
+    ___table_args__ = (
+    db.UniqueConstraint("session_id", "student_id"),
+    db.Index("ix_att_session_id", "session_id"),
+    db.Index("ix_att_student_id", "student_id"),
+    db.Index("ix_att_status",     "status"),
+)
 
     id           = db.Column(db.Integer, primary_key=True)
     session_id   = db.Column(db.Integer, db.ForeignKey("sessions.id"))
@@ -262,6 +271,133 @@ class Justification(db.Model):
 # ─────────────────────────────────────────────
 # Audit Log (traçabilité CNDP)
 # ─────────────────────────────────────────────
+"""
+NOUVEAUX MODÈLES — coller à la fin de app/models/__init__.py
+AVANT la classe AuditLog
+"""
+
+# ─────────────────────────────────────────────
+# Enums supplémentaires — coller avec les autres Enums (ligne ~35)
+# ─────────────────────────────────────────────
+
+class EvaluationStatus(PyEnum):
+    BROUILLON = "brouillon"
+    ENVOYEE   = "envoyee"
+    ARCHIVEE  = "archivee"
+
+
+class AbsenceGravite(PyEnum):
+    INFO      = "info"
+    ATTENTION = "attention"
+    CRITIQUE  = "critique"
+
+
+class AbsenceReportStatus(PyEnum):
+    NOUVEAU = "nouveau"
+    VU      = "vu"
+    TRAITE  = "traite"
+
+
+# ─────────────────────────────────────────────
+# Evaluation
+# ─────────────────────────────────────────────
+
+class Evaluation(db.Model):
+    """Fiche d'évaluation rédigée par un enseignant pour un étudiant."""
+    __tablename__ = "evaluations"
+
+    id          = db.Column(db.Integer, primary_key=True)
+    teacher_id  = db.Column(db.Integer, db.ForeignKey("teachers.id"), nullable=False)
+    student_id  = db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False)
+    course_id   = db.Column(db.Integer, db.ForeignKey("courses.id"),  nullable=False)
+
+    # ── Critères (chacun sur 5) ──────────────────────────────
+    note_participation  = db.Column(db.Float, default=0)   # /5
+    note_travail        = db.Column(db.Float, default=0)   # /5
+    note_comportement   = db.Column(db.Float, default=0)   # /5
+    note_assiduite      = db.Column(db.Float, default=0)   # /5
+    note_globale        = db.Column(db.Float, default=0)   # /20 — calculée auto
+
+    commentaire         = db.Column(db.Text)
+    statut              = db.Column(db.Enum(EvaluationStatus),
+                                    default=EvaluationStatus.BROUILLON)
+
+    created_at          = db.Column(db.DateTime,
+                                    default=lambda: datetime.now(timezone.utc))
+    sent_at             = db.Column(db.DateTime)
+
+    # ── Réponse admin ────────────────────────────────────────
+    admin_commentaire   = db.Column(db.Text)
+    admin_archived_at   = db.Column(db.DateTime)
+
+    # Relations
+    teacher  = db.relationship("Teacher",  foreign_keys=[teacher_id])
+    student  = db.relationship("Student",  foreign_keys=[student_id])
+    course   = db.relationship("Course",   foreign_keys=[course_id])
+
+    def calc_note_globale(self):
+        """Note globale = somme des 4 critères (max 20)."""
+        self.note_globale = round(
+            (self.note_participation or 0) +
+            (self.note_travail       or 0) +
+            (self.note_comportement  or 0) +
+            (self.note_assiduite     or 0),
+            2
+        )
+
+    @property
+    def mention(self):
+        n = self.note_globale or 0
+        if n >= 16: return ("Très Bien", "#00f5a0")
+        if n >= 14: return ("Bien",      "#00c8ff")
+        if n >= 12: return ("Assez Bien","#ffb347")
+        if n >= 10: return ("Passable",  "#aaa")
+        return ("Insuffisant", "#ff4d6d")
+
+    def __repr__(self):
+        return f"<Evaluation {self.student_id} par {self.teacher_id} — {self.note_globale}/20>"
+
+
+# ─────────────────────────────────────────────
+# Rapport d'absence
+# ─────────────────────────────────────────────
+
+class AbsenceReport(db.Model):
+    """Rapport d'absence envoyé par l'enseignant à l'admin."""
+    __tablename__ = "absence_reports"
+
+    id          = db.Column(db.Integer, primary_key=True)
+    teacher_id  = db.Column(db.Integer, db.ForeignKey("teachers.id"), nullable=False)
+    student_id  = db.Column(db.Integer, db.ForeignKey("students.id"), nullable=False)
+    course_id   = db.Column(db.Integer, db.ForeignKey("courses.id"),  nullable=False)
+
+    # ── Statistiques calculées ───────────────────────────────
+    nb_seances          = db.Column(db.Integer, default=0)
+    nb_absences         = db.Column(db.Integer, default=0)
+    nb_retards          = db.Column(db.Integer, default=0)
+    taux_presence       = db.Column(db.Float,   default=0.0)  # 0.0 → 1.0
+
+    periode_debut       = db.Column(db.DateTime)
+    periode_fin         = db.Column(db.DateTime)
+
+    commentaire         = db.Column(db.Text)
+    gravite             = db.Column(db.Enum(AbsenceGravite),
+                                    default=AbsenceGravite.INFO)
+    statut              = db.Column(db.Enum(AbsenceReportStatus),
+                                    default=AbsenceReportStatus.NOUVEAU)
+
+    created_at          = db.Column(db.DateTime,
+                                    default=lambda: datetime.now(timezone.utc))
+    admin_note          = db.Column(db.Text)
+    admin_treated_at    = db.Column(db.DateTime)
+
+    # Relations
+    teacher = db.relationship("Teacher", foreign_keys=[teacher_id])
+    student = db.relationship("Student", foreign_keys=[student_id])
+    course  = db.relationship("Course",  foreign_keys=[course_id])
+
+    def __repr__(self):
+        return f"<AbsenceReport {self.student_id} — {self.nb_absences} abs>"
 
 class AuditLog(db.Model):
     __tablename__ = "audit_logs"

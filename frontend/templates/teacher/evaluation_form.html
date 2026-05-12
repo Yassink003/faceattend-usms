@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}{% if eval %}Modifier{% else %}Nouvelle{% endif %} Évaluation{% endblock %}
+{% block page_title %}Fiche d'Évaluation{% endblock %}
+
+{% block extra_css %}
+<style>
+.eval-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.eval-grid .full { grid-column:1/-1; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-group label { font-size:.78rem; font-weight:700; color:var(--text-2);
+  text-transform:uppercase; letter-spacing:.06em; }
+.form-control { background:var(--bg-2); border:1px solid var(--border-2);
+  border-radius:var(--radius); color:var(--text); font-size:.9rem;
+  padding:10px 14px; outline:none; transition:border-color .2s; width:100%; }
+.form-control:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--focus-ring); }
+select.form-control option { background:var(--bg-2); }
+.section-div { grid-column:1/-1; display:flex; align-items:center; gap:12px; margin:8px 0 4px; }
+.section-div span { font-family:var(--font-head); font-size:.78rem; font-weight:700;
+  color:var(--accent); text-transform:uppercase; letter-spacing:.08em; white-space:nowrap; }
+.section-div hr { flex:1; border:none; border-top:1px solid var(--border-2); }
+.hint { font-size:.73rem; color:var(--text-3); margin-top:2px; }
+.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-2);
+  font-size:.85rem; text-decoration:none; margin-bottom:20px; transition:color .2s; }
+.back-link:hover { color:var(--accent); }
+
+/* Slider de note */
+.note-slider-wrap { display:flex; align-items:center; gap:14px; }
+.note-slider { flex:1; accent-color:var(--accent); cursor:pointer; }
+.note-badge { font-family:var(--font-head); font-size:1.1rem; font-weight:700;
+  color:var(--accent); min-width:36px; text-align:right; }
+
+/* Note globale calculée */
+.note-globale-card { background:var(--bg-2); border:1px solid var(--border-2);
+  border-radius:var(--radius); padding:20px; text-align:center; }
+.note-globale-val { font-family:var(--font-head); font-size:2.8rem; font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.mention-badge { display:inline-block; margin-top:6px; font-size:.8rem;
+  padding:3px 12px; border-radius:20px; font-weight:600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('teacher.evaluations') }}" class="back-link">
+  <i class="fas fa-arrow-left"></i> Mes évaluations
+</a>
+
+<div style="max-width:860px;margin:0 auto">
+  <div class="card" style="padding:0">
+    <div style="padding:20px 26px;border-bottom:1px solid var(--border-2)">
+      <h2 style="font-family:var(--font-head);font-size:1.1rem;color:var(--accent);margin-bottom:3px">
+        <i class="fas fa-star-half-stroke" style="margin-right:8px"></i>
+        {% if eval %}Modifier la fiche{% else %}Nouvelle fiche d'évaluation{% endif %}
+      </h2>
+      <p style="color:var(--text-3);font-size:.82rem">
+        Les notes sont calculées sur 5 points par critère — total sur 20.
+      </p>
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('teacher.evaluation_edit', eval_id=eval.id) if eval else url_for('teacher.evaluation_new') }}"
+          style="padding:24px 26px"
+          id="eval-form">
+
+      <div class="eval-grid">
+
+        <!-- Sélection cours + étudiant -->
+        <div class="section-div">
+          <span><i class="fas fa-book-open" style="margin-right:6px"></i>Contexte</span><hr>
+        </div>
+
+        <div class="form-group">
+          <label>Cours <span style="color:var(--danger)">*</span></label>
+          <select name="course_id" id="course-sel" class="form-control"
+                  onchange="loadStudents(this.value)" required>
+            <option value="" disabled {% if not eval %}selected{% endif %}>Choisir un cours…</option>
+            {% for c in courses %}
+            <option value="{{ c.id }}"
+              {% if (eval and eval.course_id == c.id) or course_id == c.id %}selected{% endif %}>
+              {{ c.name }} ({{ c.code }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Étudiant <span style="color:var(--danger)">*</span></label>
+          <select name="student_id" id="student-sel" class="form-control" required>
+            <option value="" disabled {% if not eval %}selected{% endif %}>Choisir un étudiant…</option>
+            {% for s in students %}
+            <option value="{{ s.id }}"
+              {% if (eval and eval.student_id == s.id) or (selected_student and selected_student.id == s.id) %}selected{% endif %}>
+              {{ s.full_name }} — {{ s.student_number }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Critères d'évaluation -->
+        <div class="section-div">
+          <span><i class="fas fa-sliders" style="margin-right:6px"></i>Critères d'évaluation</span><hr>
+        </div>
+
+        {% set criteres = [
+          ("note_participation", "Participation", "fas fa-hand-raised", eval.note_participation if eval else 0),
+          ("note_travail",       "Travail rendu", "fas fa-clipboard-check", eval.note_travail if eval else 0),
+          ("note_comportement",  "Comportement",  "fas fa-handshake", eval.note_comportement if eval else 0),
+          ("note_assiduite",     "Assiduité",     "fas fa-calendar-check", eval.note_assiduite if eval else 0),
+        ] %}
+
+        {% for name, label, icon, val in criteres %}
+        <div class="form-group">
+          <label><i class="{{ icon }}" style="margin-right:5px;color:var(--accent)"></i>{{ label }} <span style="color:var(--text-3)">/5</span></label>
+          <div class="note-slider-wrap">
+            <input type="range" name="{{ name }}" id="{{ name }}"
+                   class="note-slider" min="0" max="5" step="0.5"
+                   value="{{ val }}"
+                   oninput="updateNote('{{ name }}', this.value)">
+            <span class="note-badge" id="{{ name }}-badge">{{ val }}</span>
+          </div>
+        </div>
+        {% endfor %}
+
+        <!-- Note globale calculée -->
+        <div class="full">
+          <div class="note-globale-card">
+            <div style="font-size:.75rem;color:var(--text-3);text-transform:uppercase;
+                        letter-spacing:.08em;margin-bottom:8px">Note Globale</div>
+            <div class="note-globale-val" id="note-globale">
+              {{ eval.note_globale if eval else 0 }}
+            </div>
+            <div style="font-size:.8rem;color:var(--text-3)">/20</div>
+            <div class="mention-badge" id="mention-badge" style="background:rgba(37,99,235,.12);color:var(--accent)">
+              —
+            </div>
+          </div>
+        </div>
+
+        <!-- Commentaire -->
+        <div class="section-div">
+          <span><i class="fas fa-comment-dots" style="margin-right:6px"></i>Commentaire</span><hr>
+        </div>
+
+        <div class="form-group full">
+          <label>Observations libres</label>
+          <textarea name="commentaire" class="form-control" rows="4"
+                    placeholder="Points forts, points à améliorer, observations particulières…">{{ eval.commentaire if eval else '' }}</textarea>
+          <span class="hint">Ce commentaire sera visible par l'administration.</span>
+        </div>
+
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;
+                  padding-top:20px;border-top:1px solid var(--border-2);margin-top:20px">
+        <a href="{{ url_for('teacher.evaluations') }}" class="btn btn--ghost">
+          <i class="fas fa-xmark"></i> Annuler
+        </a>
+        <button type="submit" name="action" value="brouillon" class="btn btn--ghost">
+          <i class="fas fa-floppy-disk"></i> Sauvegarder brouillon
+        </button>
+        <button type="submit" name="action" value="envoyer" class="btn btn--primary"
+                onclick="return confirm('Envoyer la fiche à l\'administration ? Elle ne pourra plus être modifiée.')">
+          <i class="fas fa-paper-plane"></i> Envoyer à l'admin
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Charger les étudiants selon le cours sélectionné
+  function loadStudents(courseId) {
+    if (!courseId) return;
+    fetch('/teacher/api/courses/' + courseId + '/students')
+      .then(r => r.json())
+      .then(data => {
+        const sel = document.getElementById('student-sel');
+        sel.innerHTML = '<option value="" disabled selected>Choisir un étudiant…</option>';
+        data.students.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.full_name + ' — ' + s.student_number;
+          sel.appendChild(opt);
+        });
+      })
+      .catch(e => console.warn('loadStudents error:', e));
+  }
+
+  // Mettre à jour la note affichée + calculer le total
+  function updateNote(field, val) {
+    document.getElementById(field + '-badge').textContent = val;
+    calcTotal();
+  }
+
+  function calcTotal() {
+    const fields = ['note_participation','note_travail','note_comportement','note_assiduite'];
+    let total = 0;
+    fields.forEach(f => {
+      const el = document.getElementById(f);
+      if (el) total += parseFloat(el.value) || 0;
+    });
+    total = Math.round(total * 10) / 10;
+    document.getElementById('note-globale').textContent = total;
+
+    // Mention
+    const mentionEl = document.getElementById('mention-badge');
+    let mention, color;
+    if      (total >= 16) { mention = 'Très Bien';   color = '#059669'; }
+    else if (total >= 14) { mention = 'Bien';         color = '#0ea5e9'; }
+    else if (total >= 12) { mention = 'Assez Bien';   color = '#d97706'; }
+    else if (total >= 10) { mention = 'Passable';     color = '#aaaaaa'; }
+    else                  { mention = 'Insuffisant';  color = '#dc2626'; }
+    mentionEl.textContent = mention;
+    mentionEl.style.background = color + '22';
+    mentionEl.style.color      = color;
+  }
+
+  // Init au chargement
+  calcTotal();
+</script>
+{% endblock %}

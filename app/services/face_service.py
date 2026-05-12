@@ -16,6 +16,7 @@ Avantages vs dlib HOG :
 import io
 import numpy as np
 from loguru import logger
+from app.services.anti_spoofing import AntiSpoofingService
 
 # ── Imports optionnels (gracieux si modèles non installés) ──
 try:
@@ -219,11 +220,13 @@ class FaceRecognitionService:
 
     # ── Identification dans un frame OpenCV ─────────────────
 
+    
     @classmethod
-    def identify_faces_in_frame(cls, frame, known_encodings):
+    def identify_faces_in_frame(cls, frame, known_encodings, spoof_service=None):
         """
         Détecte et identifie les visages dans un frame OpenCV BGR.
-        Retourne une liste de dicts {student_id, confidence, location, box}.
+        Si spoof_service est fourni, vérifie la vivacité avant identification.
+        Retourne une liste de dicts {student_id, confidence, location, box, liveness}.
         """
         if not FACE_LIB_AVAILABLE or not known_encodings:
             return []
@@ -236,9 +239,9 @@ class FaceRecognitionService:
             detector = _get_detector()
 
             # Réduire la taille pour accélérer MTCNN
-            scale = 0.7
+            scale       = 0.7
             small_frame = cv2.resize(img_rgb, (0, 0), fx=scale, fy=scale)
-            faces = detector.detect_faces(small_frame)
+            faces       = detector.detect_faces(small_frame)
 
             # Remettre les coordonnées à l'échelle originale
             for face in faces:
@@ -247,6 +250,7 @@ class FaceRecognitionService:
                     k: (int(v[0] / scale), int(v[1] / scale))
                     for k, v in face["keypoints"].items()
                 }
+
             known_vecs = np.array([d["encoding"] for d in known_encodings], dtype=np.float32)
             known_ids  = [d["student_id"] for d in known_encodings]
 
@@ -255,6 +259,30 @@ class FaceRecognitionService:
                 if face_info["confidence"] < 0.85:
                     continue
 
+                # ── ANTI-SPOOFING ────────────────────────────
+                liveness = {"is_live": True, "score": 1.0, "reason": "bypass"}
+                if spoof_service is not None:
+                    liveness = spoof_service.check_frame(frame, face_info)
+                    if not liveness["is_live"]:
+                        logger.warning(
+                            f"[ANTISPOOF] Tentative bloquée — "
+                            f"score={liveness['score']:.2f} "
+                            f"raison={liveness['reason']}"
+                        )
+                        # Ajouter quand même dans detections pour afficher
+                        # le bounding box en rouge dans le stream
+                        detections.append({
+                            "student_id": None,
+                            "confidence": 0.0,
+                            "location":   (0, 0, 0, 0),
+                            "box":        face_info["box"],
+                            "distance":   999.0,
+                            "liveness":   liveness,
+                            "spoof":      True,
+                        })
+                        continue   # NE PAS reconnaître
+
+                # ── RECONNAISSANCE (seulement si vivant) ─────
                 aligned   = _align_face(img_rgb, face_info["box"], face_info["keypoints"])
                 if aligned is None:
                     continue
@@ -270,7 +298,7 @@ class FaceRecognitionService:
                 confidence = max(0.0, 1.0 - best_dist / 2.0)
 
                 x, y, bw, bh = face_info["box"]
-                location = (y, x + bw, y + bh, x)   # top,right,bottom,left
+                location = (y, x + bw, y + bh, x)
 
                 detections.append({
                     "student_id": known_ids[best_idx] if best_dist <= tolerance else None,
@@ -278,7 +306,10 @@ class FaceRecognitionService:
                     "location":   location,
                     "box":        face_info["box"],
                     "distance":   round(best_dist, 4),
+                    "liveness":   liveness,
+                    "spoof":      False,
                 })
+
             return detections
 
         except Exception as e:
@@ -294,14 +325,29 @@ class FaceRecognitionService:
             return frame
         for d in detections:
             x, y, bw, bh = d["box"]
-            sid   = d["student_id"]
-            label = student_map.get(sid, "Inconnu") if sid else "Inconnu"
-            color = (0, 220, 90) if sid else (0, 60, 220)
+            sid   = d.get("student_id")
+            spoof = d.get("spoof", False)
+
+            if spoof:
+                # Boîte ROUGE pour tentative de spoofing
+                color = (0, 0, 255)
+                label = "SPOOF DETECTE"
+            elif sid:
+                # Boîte VERTE pour reconnaissance réussie
+                color = (0, 220, 90)
+                label = student_map.get(sid, "Inconnu")
+                score = d.get("liveness", {}).get("score", 1.0)
+                label += f" ({d['confidence']:.0%}) L={score:.0%}"
+            else:
+                # Boîte BLEUE pour inconnu
+                color = (220, 60, 0)
+                label = "Inconnu"
+
             cv2.rectangle(frame, (x, y), (x + bw, y + bh), color, 2)
             cv2.rectangle(frame, (x, y + bh - 28), (x + bw, y + bh), color, cv2.FILLED)
             cv2.putText(
-                frame, f"{label} ({d['confidence']:.0%})",
+                frame, label,
                 (x + 6, y + bh - 8),
-                cv2.FONT_HERSHEY_DUPLEX, 0.55, (255, 255, 255), 1,
+                cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1,
             )
         return frame

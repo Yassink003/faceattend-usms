@@ -10,7 +10,7 @@ app = create_app()
 with app.app_context():
 
     # ─── MODIFIE CES VALEURS ────────────────────────────────
-    NUMERO_APOGEE = "21000120"
+    NUMERO_APOGEE = "22000777"  # ← ton numéro apogée
     CODES_COURS   = ["ASF101", "DDO102", "TEQ103", "EDN104"]
     # ────────────────────────────────────────────────────────
 

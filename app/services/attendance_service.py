@@ -10,6 +10,7 @@ from app.models import (
     AttendanceStatus, AuditLog
 )
 from app.services.face_service import FaceRecognitionService
+from sqlalchemy import func
 
 
 class AttendanceService:
@@ -30,14 +31,17 @@ class AttendanceService:
         db.session.flush()  # Obtenir l'id avant commit
 
         # Marquer tous les étudiants inscrits comme absents par défaut
+        # APRÈS (1 seule requête SQL) :
         enrollments = Enrollment.query.filter_by(course_id=course_id).all()
-        for enr in enrollments:
-            att = Attendance(
-                session_id=session.id,
-                student_id=enr.student_id,
-                status=AttendanceStatus.ABSENT,
-            )
-            db.session.add(att)
+        db.session.bulk_insert_mappings(Attendance, [
+          {
+             "session_id": session.id,
+             "student_id": enr.student_id,
+             "status":     AttendanceStatus.ABSENT,
+             "method":     "face",
+          }
+          for enr in enrollments
+        ])
 
         db.session.commit()
         logger.info(f"[ATTENDANCE] Séance {session.id} ouverte pour cours {course_id}")
@@ -122,14 +126,28 @@ class AttendanceService:
 
     @classmethod
     def process_camera_frame(cls, frame, session_id: int,
-                              known_encodings: list[dict]) -> list[dict]:
+                              known_encodings: list[dict],
+                              spoof_service=None) -> list[dict]:
         """
         Reçoit un frame OpenCV, identifie les visages et marque les présences.
+        Si spoof_service fourni, vérifie la vivacité avant de pointer.
         Retourne la liste des détections.
         """
-        detections = FaceRecognitionService.identify_faces_in_frame(frame, known_encodings)
+        detections = FaceRecognitionService.identify_faces_in_frame(
+            frame,
+            known_encodings,
+            spoof_service=spoof_service    # ← passer le service anti-spoofing
+        )
 
         for d in detections:
+            # Bloquer les tentatives de spoofing
+            if d.get("spoof"):
+                logger.warning(
+                    f"[ATTENDANCE] Spoof bloqué — "
+                    f"score={d.get('liveness', {}).get('score', 0):.2f}"
+                )
+                continue
+
             if d["student_id"] and d["confidence"] >= 0.55:
                 cls.mark_present_by_face(
                     session_id=session_id,
@@ -168,14 +186,37 @@ class AttendanceService:
 
     @classmethod
     def get_at_risk_students(cls, threshold: float = 0.70) -> list[dict]:
-        """Détecte les étudiants en décrochage (taux présence < seuil)."""
-        students = Student.query.all()
-        at_risk = []
-        for s in students:
-            stats = cls.get_student_stats(s.id)
-            if stats["total"] >= 3 and stats["rate"] / 100 < threshold:
-                at_risk.append({
-                    "student": s,
-                    "stats":   stats,
-                })
-        return sorted(at_risk, key=lambda x: x["stats"]["rate"])
+       """Détecte les étudiants en décrochage — 1 seule requête SQL agrégée."""
+       rows = (
+            db.session.query(
+                Student,
+                func.count(Attendance.id).label("total"),
+                func.sum(db.case(
+                   (Attendance.status.in_([
+                       AttendanceStatus.PRESENT,
+                       AttendanceStatus.LATE
+                   ]), 1),
+                   else_=0
+                )).label("present")
+        )
+          .join(Attendance, Attendance.student_id == Student.id)
+          .group_by(Student.id)
+          .having(func.count(Attendance.id) >= 3)
+          .all()
+       )
+       result = []
+       for student, total, present in rows:
+           present = present or 0
+           rate    = round(present / total * 100, 1) if total else 0
+           if rate / 100 < threshold:
+               result.append({
+                   "student": student,
+                   "stats": {
+                      "total":   total,
+                      "present": present,
+                      "absent":  total - present,
+                      "rate":    rate,
+                      "at_risk": True,
+                  }
+             })
+       return sorted(result, key=lambda x: x["stats"]["rate"])

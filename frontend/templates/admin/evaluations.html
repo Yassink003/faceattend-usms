@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Évaluations reçues{% endblock %}
+{% block page_title %}Fiches d'Évaluation{% endblock %}
+{% block content %}
+
+<!-- Filtres -->
+<div class="section-header">
+  <h2>Fiches reçues</h2>
+  <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap">
+    <select name="teacher_id" onchange="this.form.submit()" style="padding:7px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.83rem">
+      <option value="">Tous les profs</option>
+      {% for t in teachers %}<option value="{{ t.id }}" {% if f_teacher==t.id %}selected{% endif %}>{{ t.full_name }}</option>{% endfor %}
+    </select>
+    <select name="course_id" onchange="this.form.submit()" style="padding:7px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.83rem">
+      <option value="">Tous les cours</option>
+      {% for c in courses %}<option value="{{ c.id }}" {% if f_course==c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+    <select name="student_id" onchange="this.form.submit()" style="padding:7px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.83rem">
+      <option value="">Tous les étudiants</option>
+      {% for s in students %}<option value="{{ s.id }}" {% if f_student==s.id %}selected{% endif %}>{{ s.full_name }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
+{% for f in pagination.items %}
+<div class="card" style="padding:0;overflow:hidden">
+  <!-- Header -->
+  <div style="padding:14px 18px;border-bottom:1px solid var(--border-2);display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <strong style="font-size:.9rem">{{ f.student.full_name }}</strong>
+      <span style="font-size:.72rem;font-family:var(--font-mono);color:var(--text-3);margin-left:6px">{{ f.student.student_number }}</span>
+    </div>
+    {% set m = f.mention %}
+    <span style="font-family:var(--font-head);font-size:1.3rem;color:{{ m[1] }}">{{ f.note_globale }}<span style="font-size:.7rem;color:var(--text-3)">/20</span></span>
+  </div>
+
+  <!-- Critères -->
+  <div style="padding:14px 18px">
+    {% for label, val in [('Participation', f.note_participation), ('Travail', f.note_travail), ('Comportement', f.note_comportement), ('Assiduité', f.note_assiduite)] %}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:.78rem;color:var(--text-2)">{{ label }}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:80px;height:4px;background:var(--bg-3);border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:{{ (val/5*100)|round|int }}%;background:var(--accent);border-radius:2px"></div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--accent);min-width:24px;text-align:right">{{ val }}/5</span>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if f.commentaire %}
+    <div style="margin-top:10px;padding:10px;background:var(--bg-2);border-radius:var(--radius);border-left:3px solid var(--accent)">
+      <p style="font-size:.78rem;color:var(--text-2);margin:0">{{ f.commentaire }}</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:10px;font-size:.75rem;color:var(--text-3)">
+      <i class="fas fa-chalkboard-user" style="margin-right:4px"></i>{{ f.teacher.full_name }} ·
+      <i class="fas fa-book-open" style="margin-left:6px;margin-right:4px"></i>{{ f.course.code }} ·
+      {{ f.sent_at.strftime('%d/%m/%Y %H:%M') if f.sent_at else '—' }}
+    </div>
+
+    <!-- Commentaire admin -->
+    {% if f.admin_commentaire %}
+    <div style="margin-top:10px;padding:8px 12px;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.22);border-radius:var(--radius)">
+      <span style="font-size:.72rem;color:#0284c7;font-weight:700">ADMIN :</span>
+      <span style="font-size:.78rem;color:var(--text-2);margin-left:4px">{{ f.admin_commentaire }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Actions -->
+  <div style="padding:10px 18px;border-top:1px solid var(--border-2);display:flex;gap:8px">
+    <form method="POST" action="{{ url_for('admin.evaluation_comment', eval_id=f.id) }}" style="flex:1;display:flex;gap:6px">
+      <input name="commentaire" class="form-control" placeholder="Commentaire admin…"
+             style="flex:1;padding:6px 10px;font-size:.8rem"
+             value="{{ f.admin_commentaire or '' }}">
+      <button type="submit" class="btn btn--sm btn--ghost"><i class="fas fa-check"></i></button>
+    </form>
+    <form method="POST" action="{{ url_for('admin.evaluation_archive', eval_id=f.id) }}"
+          onsubmit="return confirm('Archiver cette fiche ?')">
+      <button type="submit" class="btn btn--sm btn--ghost" title="Archiver">
+        <i class="fas fa-archive"></i>
+      </button>
+    </form>
+  </div>
+</div>
+{% else %}
+<div style="grid-column:1/-1;text-align:center;color:var(--text-3);padding:60px">
+  Aucune fiche d'évaluation reçue.
+</div>
+{% endfor %}
+</div>
+
+{% if pagination.pages > 1 %}
+<div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+  {% for p in pagination.iter_pages() %}
+    {% if p %}
+    <a href="?page={{ p }}" class="btn btn--sm {% if p == pagination.page %}btn--primary{% else %}btn--ghost{% endif %}">{{ p }}</a>
+    {% else %}<span style="padding:6px;color:var(--text-3)">…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

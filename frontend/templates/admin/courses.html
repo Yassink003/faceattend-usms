@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Matières{% endblock %}
+{% block page_title %}Gestion des Matières{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <h2>Liste des matières</h2>
+  <div style="display:flex;gap:8px">
+    <form method="GET" style="display:flex;gap:8px">
+      <div class="input-icon-wrap" style="flex:1">
+        <i class="fas fa-search"></i>
+        <input type="text" name="q" value="{{ search }}" placeholder="Rechercher…"
+               style="padding:8px 12px 8px 36px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.85rem;outline:none;min-width:220px"/>
+      </div>
+      <button type="submit" class="btn btn--ghost btn--sm">Rechercher</button>
+    </form>
+    <a href="{{ url_for('admin.create_course') }}" class="btn-create-pill">
+      <i class="fas fa-book-medical"></i> Nouvelle matière
+    </a>
+  </div>
+</div>
+
+<div class="card" style="padding:0">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Intitulé</th>
+          <th>Professeur</th>
+          <th>Salle</th>
+          <th>Crédits</th>
+          <th>Inscrits</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for course in pagination.items %}
+        <tr>
+          <td>
+            <code style="font-family:var(--font-mono);color:var(--accent);font-size:.8rem;background:rgba(37,99,235,.1);padding:2px 8px;border-radius:4px">
+              {{ course.code }}
+            </code>
+          </td>
+          <td><strong>{{ course.name }}</strong></td>
+          <td>{{ course.teacher.full_name if course.teacher else '—' }}</td>
+          <td>{{ course.room or '—' }}</td>
+          <td style="text-align:center">{{ course.credits }}</td>
+          <td style="text-align:center">
+            <span class="badge badge--present">{{ course.enrollments.count() }}</span>
+          </td>
+          <td>
+            {% if course.is_active %}
+              <span class="badge badge--present"><i class="fas fa-check"></i> Actif</span>
+            {% else %}
+              <span class="badge badge--absent"><i class="fas fa-xmark"></i> Inactif</span>
+            {% endif %}
+          </td>
+          <td style="display:flex;gap:6px">
+            <a href="{{ url_for('admin.course_detail', course_id=course.id) }}"
+               class="btn btn--sm btn--ghost">
+              <i class="fas fa-eye"></i> Détail
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center;color:var(--text-3);padding:40px">
+            Aucune matière trouvée.
+            <a href="{{ url_for('admin.create_course') }}" style="color:var(--accent)">Créer la première</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if pagination.pages > 1 %}
+<div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+  {% for page_num in pagination.iter_pages(left_edge=2,right_edge=2,left_current=2,right_current=3) %}
+    {% if page_num %}
+      <a href="?page={{ page_num }}{% if search %}&q={{ search }}{% endif %}"
+         class="btn btn--sm {% if page_num == pagination.page %}btn--primary{% else %}btn--ghost{% endif %}">
+        {{ page_num }}
+      </a>
+    {% else %}
+      <span style="color:var(--text-3);padding:6px">…</span>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

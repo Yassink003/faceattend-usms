@@ -10,7 +10,8 @@ from flask import Blueprint, Response, jsonify, request, current_app, stream_wit
 from flask_login import login_required, current_user
 from app.models import RoleEnum
 from loguru import logger
-
+import psutil
+from app.services.anti_spoofing import AntiSpoofingService
 camera_bp = Blueprint("camera", __name__)
 
 # ── Cache séance ─────────────────────────────────────────────
@@ -46,6 +47,7 @@ except Exception:
 class CameraThread(threading.Thread):
     def __init__(self, session_id, camera_index, width,app, height, process_every=8):
         super().__init__(daemon=True)
+
         self.session_id    = session_id
         self.camera_index  = camera_index
         self.width         = width
@@ -53,6 +55,8 @@ class CameraThread(threading.Thread):
         self.process_every = process_every
         self.running       = True
         self.app           = app
+        self._frame_count = 0
+        self.spoof_service = AntiSpoofingService()
 
     def run(self):
         global _latest_frame
@@ -78,12 +82,19 @@ class CameraThread(threading.Thread):
                     continue
 
                 frame_count += 1
+                try:
+        
+                   cpu = psutil.cpu_percent(interval=0)
+                   interval = 4 if cpu < 40 else 8 if cpu < 70 else 16
+                except ImportError:
+                   interval = self.process_every   # fallback valeur fixe
 
-                if FACE_AVAILABLE and frame_count % self.process_every == 0:
+                if FACE_AVAILABLE and frame_count % interval == 0:
                     try:
                         if _known_encodings:
                             detections = AttendanceService.process_camera_frame(
-                                frame, self.session_id, _known_encodings
+                                frame, self.session_id, _known_encodings,
+                                spoof_service=self.spoof_service
                             )
                             frame = FaceRecognitionService.draw_results(
                                 frame, detections, _student_names
@@ -234,11 +245,7 @@ def process_snapshot():
     return jsonify({"detections": [
         {"student_id": d["student_id"], "confidence": d["confidence"]}
         for d in detections
-    ]})
-
-
-@camera_bp.route("/status")
-@login_required
+     ]})
 def status():
     cam_ok = _camera_thread is not None and _camera_thread.is_alive()
     return jsonify({

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Rapports d'Absence{% endblock %}
+{% block page_title %}Rapports d'Absence{% endblock %}
+
+{% block content %}
+
+<div class="section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <h2 style="font-family:var(--font-head);font-size:1.1rem">Mes rapports d'absence</h2>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <!-- Filtre par cours -->
+    <form method="GET" style="display:flex;gap:8px">
+      <select name="course_id" onchange="this.form.submit()"
+              style="padding:7px 12px;background:var(--bg-2);border:1px solid var(--border-2);
+                     border-radius:var(--radius);color:var(--text);font-size:.83rem;outline:none">
+        <option value="">Tous les cours</option>
+        {% for c in courses %}
+        <option value="{{ c.id }}" {% if selected_course == c.id %}selected{% endif %}>
+          {{ c.name }} ({{ c.code }})
+        </option>
+        {% endfor %}
+      </select>
+    </form>
+    <a href="{{ url_for('teacher.absence_report_new') }}" class="btn btn--primary btn--sm">
+      <i class="fas fa-file-circle-plus"></i> Nouveau rapport
+    </a>
+  </div>
+</div>
+
+{% if reports %}
+<div class="card" style="padding:0">
+  <table>
+    <thead>
+      <tr>
+        <th>Étudiant</th>
+        <th>Cours</th>
+        <th>Absences</th>
+        <th>Retards</th>
+        <th>Taux présence</th>
+        <th>Gravité</th>
+        <th>Statut admin</th>
+        <th>Date envoi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reports %}
+      {% set grav_color = '#dc2626' if r.gravite.value=='critique' else '#d97706' if r.gravite.value=='attention' else '#0ea5e9' %}
+      <tr>
+        <td>
+          <strong style="font-size:.85rem">{{ r.student.full_name }}</strong><br>
+          <span style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-3)">
+            {{ r.student.student_number }}
+          </span>
+        </td>
+        <td>
+          <span style="font-size:.82rem">{{ r.course.name }}</span><br>
+          <code style="font-size:.7rem;color:var(--accent-2)">{{ r.course.code }}</code>
+        </td>
+        <td style="text-align:center;font-family:var(--font-head);font-size:1.1rem;color:var(--danger)">
+          {{ r.nb_absences }}
+          <span style="font-size:.7rem;color:var(--text-3)">/ {{ r.nb_seances }}</span>
+        </td>
+        <td style="text-align:center;font-family:var(--font-head);font-size:1.1rem;color:#d97706">
+          {{ r.nb_retards }}
+        </td>
+        <td>
+          {% set pct = (r.taux_presence * 100)|round|int %}
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:60px;height:6px;background:var(--bg-3);border-radius:3px;overflow:hidden">
+              <div style="height:100%;width:{{ pct }}%;border-radius:3px;
+                          background:{{ '#2563eb' if pct >= 75 else '#d97706' if pct >= 50 else '#dc2626' }}">
+              </div>
+            </div>
+            <span style="font-family:var(--font-mono);font-size:.78rem;color:var(--text-2)">{{ pct }}%</span>
+          </div>
+        </td>
+        <td>
+          <span style="font-size:.78rem;font-weight:700;color:{{ grav_color }}">
+            {% if r.gravite.value == 'critique' %}🔴 Critique
+            {% elif r.gravite.value == 'attention' %}⚠️ Attention
+            {% else %}ℹ️ Info{% endif %}
+          </span>
+        </td>
+        <td>
+          {% if r.statut.value == 'nouveau' %}
+            <span class="badge badge--absent" style="font-size:.72rem">Nouveau</span>
+          {% elif r.statut.value == 'vu' %}
+            <span class="badge" style="background:rgba(217,119,6,.14);color:#b45309;font-size:.72rem">Vu</span>
+          {% else %}
+            <span class="badge badge--present" style="font-size:.72rem">Traité</span>
+          {% endif %}
+          {% if r.admin_note %}
+          <div style="font-size:.72rem;color:var(--text-3);margin-top:4px;font-style:italic">
+            "{{ r.admin_note[:50] }}{% if r.admin_note|length > 50 %}…{% endif %}"
+          </div>
+          {% endif %}
+        </td>
+        <td style="font-size:.78rem;color:var(--text-3)">
+          {{ r.created_at.strftime('%d/%m/%Y') }}<br>
+          {{ r.created_at.strftime('%H:%M') }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="card" style="text-align:center;padding:60px;color:var(--text-3)">
+  <i class="fas fa-file-circle-question" style="font-size:3rem;margin-bottom:16px;display:block"></i>
+  <p style="font-size:.9rem;margin-bottom:16px">Aucun rapport d'absence envoyé.</p>
+  <a href="{{ url_for('teacher.absence_report_new') }}" class="btn btn--primary">
+    <i class="fas fa-file-circle-plus"></i> Créer un rapport
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -7,88 +7,175 @@
 {% endblock %}
 
 {% block content %}
-<!-- ── Stats Cards ─────────────────────────────────────── -->
+<!-- ── Stats ───────────────────────────────────────────── -->
 <div class="stats-grid">
-  <div class="stat-card" style="--accent-color:#00f5a0">
+  <div class="stat-card" style="--accent-color:#4f46e5">
     <div class="stat-card__icon"><i class="fas fa-users"></i></div>
     <div class="stat-card__value">{{ stats.total_students }}</div>
     <div class="stat-card__label">Étudiants inscrits</div>
   </div>
-  <div class="stat-card" style="--accent-color:#00c8ff">
-    <div class="stat-card__icon" style="background:rgba(0,200,255,.1)"><i class="fas fa-chalkboard-teacher"></i></div>
+  <div class="stat-card" style="--accent-color:#0d9488">
+    <div class="stat-card__icon" style="background:linear-gradient(135deg,rgba(13,148,136,.15),rgba(79,70,229,.08))"><i class="fas fa-chalkboard-user"></i></div>
     <div class="stat-card__value">{{ stats.total_teachers }}</div>
     <div class="stat-card__label">Enseignants</div>
   </div>
-  <div class="stat-card" style="--accent-color:#7c5cfc">
-    <div class="stat-card__icon" style="background:rgba(124,92,252,.1)"><i class="fas fa-book-open"></i></div>
+  <div class="stat-card" style="--accent-color:#7c3aed">
+    <div class="stat-card__icon" style="background:linear-gradient(135deg,rgba(124,58,237,.14),rgba(13,148,136,.08))"><i class="fas fa-book-open"></i></div>
     <div class="stat-card__value">{{ stats.total_courses }}</div>
-    <div class="stat-card__label">Cours actifs</div>
+    <div class="stat-card__label">Matières actives</div>
   </div>
-  <div class="stat-card" style="--accent-color:#ffb347">
-    <div class="stat-card__icon" style="background:rgba(255,179,71,.1)"><i class="fas fa-video"></i></div>
+  <div class="stat-card" style="--accent-color:#ca8a04">
+    <div class="stat-card__icon" style="background:rgba(202,138,4,.12)"><i class="fas fa-video"></i></div>
     <div class="stat-card__value">{{ stats.active_sessions }}</div>
     <div class="stat-card__label">Séances en cours</div>
   </div>
-  <div class="stat-card" style="--accent-color:#00f5a0">
+  <div class="stat-card" style="--accent-color:#6366f1">
     <div class="stat-card__icon"><i class="fas fa-face-smile"></i></div>
     <div class="stat-card__value">{{ stats.enrolled_faces }}</div>
     <div class="stat-card__label">Visages enrôlés</div>
   </div>
-  <div class="stat-card" style="--accent-color:#ff4d6d">
-    <div class="stat-card__icon" style="background:rgba(255,77,109,.1)"><i class="fas fa-triangle-exclamation"></i></div>
+  <div class="stat-card" style="--accent-color:#dc2626">
+    <div class="stat-card__icon" style="background:rgba(220,38,38,.12)"><i class="fas fa-triangle-exclamation"></i></div>
     <div class="stat-card__value">{{ stats.at_risk_count }}</div>
     <div class="stat-card__label">Étudiants en décrochage</div>
   </div>
 </div>
 
-<!-- ── Charts + Actions ───────────────────────────────── -->
-<div class="grid-2" style="margin-bottom:24px">
-  <div class="card card--glow">
-    <div class="section-header">
-      <h2><i class="fas fa-chart-bar" style="color:var(--accent);margin-right:8px"></i>Taux de présence par cours</h2>
+<!-- ── Création rapide ─────────────────────────────────── -->
+<div class="create-rail">
+  <a href="{{ url_for('admin.create_student') }}" class="create-tile create-tile--student">
+    <span class="create-tile__icon"><i class="fas fa-user-plus"></i></span>
+    <span class="create-tile__text">
+      <strong>Nouvel étudiant</strong>
+      <small>Compte, filière & enrôlement reconnaissance faciale</small>
+    </span>
+    <span class="create-tile__arrow"><i class="fas fa-arrow-right"></i></span>
+  </a>
+  <a href="{{ url_for('admin.create_teacher') }}" class="create-tile create-tile--teacher">
+    <span class="create-tile__icon"><i class="fas fa-chalkboard-user"></i></span>
+    <span class="create-tile__text">
+      <strong>Nouvel enseignant</strong>
+      <small>Affectation matières & accès espace prof</small>
+    </span>
+    <span class="create-tile__arrow"><i class="fas fa-arrow-right"></i></span>
+  </a>
+  <a href="{{ url_for('admin.create_course') }}" class="create-tile create-tile--course">
+    <span class="create-tile__icon"><i class="fas fa-book-medical"></i></span>
+    <span class="create-tile__text">
+      <strong>Nouvelle matière</strong>
+      <small>Code, crédits & lien avec les séances / présences</small>
+    </span>
+    <span class="create-tile__arrow"><i class="fas fa-arrow-right"></i></span>
+  </a>
+</div>
+
+<!-- ── Graphiques analytics ────────────────────────────── -->
+<div class="dashboard-charts">
+  <div class="chart-panel chart-panel--wide">
+    <div class="chart-panel__head">
+      <div class="chart-panel__title">
+        <span class="chart-panel__icon"><i class="fas fa-layer-group"></i></span>
+        <div>
+          <h3>Empilement des statuts par cours</h3>
+          <p>Chaque barre cumule les saisies de présence : détection faciale, retard et absences — vision directe du « trou » d’absentéisme.</p>
+        </div>
+      </div>
+      <span class="chart-panel__scanline"><i class="fas fa-fingerprint"></i> Données temps réel</span>
     </div>
-    <canvas id="attendanceChart" height="220"></canvas>
+    <div class="chart-panel__body">
+      <canvas id="stackedCourseChart" aria-label="Graphique empilé par cours"></canvas>
+      <div id="stackedChartEmpty" class="chart-empty" hidden>Aucune séance clôturée avec présences enregistrées pour tracer ce graphique.</div>
+    </div>
   </div>
 
+  <div class="chart-panel">
+    <div class="chart-panel__head">
+      <div class="chart-panel__title">
+        <span class="chart-panel__icon" style="color:#dc2626"><i class="fas fa-chart-line"></i></span>
+        <div>
+          <h3>Tendance des absences</h3>
+          <p>Volume d’absences par jour de séance (14 derniers jours).</p>
+        </div>
+      </div>
+    </div>
+    <div class="chart-panel__body">
+      <canvas id="absenceTrendChart" aria-label="Courbe des absences"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="chart-panel__head">
+      <div class="chart-panel__title">
+        <span class="chart-panel__icon" style="color:var(--accent-3)"><i class="fas fa-bullseye"></i></span>
+        <div>
+          <h3>Vue globale des statuts</h3>
+          <p>Répartition sur 60 jours — lecture instantanée de la santé des présences.</p>
+        </div>
+      </div>
+    </div>
+    <div class="chart-panel__body">
+      <canvas id="statusPolarChart" aria-label="Graphique polar statuts"></canvas>
+      <div id="statusPolarEmpty" class="chart-empty" hidden>Pas encore assez de données de présence pour afficher cette vue.</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-bottom:24px">
   <div class="card">
     <div class="section-header">
-      <h2><i class="fas fa-bolt" style="color:var(--accent-2);margin-right:8px"></i>Actions rapides</h2>
+      <h2><i class="fas fa-bolt" style="color:var(--accent-2);margin-right:8px"></i>Actions & conformité</h2>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <a href="{{ url_for('admin.students') }}"    class="btn btn--ghost"><i class="fas fa-users"></i> Gérer les étudiants</a>
-      <a href="{{ url_for('admin.at_risk') }}"     class="btn btn--ghost" style="color:var(--warning);border-color:rgba(255,179,71,.3)"><i class="fas fa-triangle-exclamation"></i> Voir décrochage</a>
-      <a href="{{ url_for('admin.export_report')}}"class="btn btn--ghost" style="color:var(--accent);border-color:var(--border)"><i class="fas fa-file-excel"></i> Exporter rapport global</a>
+    <div class="action-link-grid">
+      <a href="{{ url_for('admin.students') }}" class="action-link"><i class="fas fa-users"></i> Gérer les étudiants</a>
+      <a href="{{ url_for('admin.teachers') }}" class="action-link"><i class="fas fa-chalkboard-user"></i> Équipe enseignante</a>
+      <a href="{{ url_for('admin.courses') }}" class="action-link"><i class="fas fa-book-open"></i> Matières & séances</a>
+      <a href="{{ url_for('admin.at_risk') }}" class="action-link" style="border-color:rgba(220,38,38,.2);background:linear-gradient(90deg,rgba(220,38,38,.06),transparent)"><i class="fas fa-triangle-exclamation" style="color:var(--danger)"></i> Décrochage & alertes</a>
+      <a href="{{ url_for('admin.export_report')}}" class="action-link"><i class="fas fa-file-excel"></i> Exporter le rapport global</a>
     </div>
 
-    <hr style="border:none;border-top:1px solid var(--border-2);margin:20px 0"/>
+    <hr style="border:none;border-top:1px solid var(--border-2);margin:22px 0"/>
 
     <div class="section-header" style="margin-bottom:12px">
       <h2 style="font-size:.95rem">Conformité CNDP</h2>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;color:var(--text-2)">
       <div style="display:flex;align-items:center;gap:8px">
-        <i class="fas fa-check-circle" style="color:var(--accent)"></i>
+        <i class="fas fa-check-circle" style="color:var(--accent-2)"></i>
         Chiffrement AES-256-GCM actif
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <i class="fas fa-check-circle" style="color:var(--accent)"></i>
+        <i class="fas fa-check-circle" style="color:var(--accent-2)"></i>
         Pseudonymisation des données biométriques
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <i class="fas fa-check-circle" style="color:var(--accent)"></i>
+        <i class="fas fa-check-circle" style="color:var(--accent-2)"></i>
         Droit à l'oubli (soft delete)
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <i class="fas fa-check-circle" style="color:var(--accent)"></i>
+        <i class="fas fa-check-circle" style="color:var(--accent-2)"></i>
         Journal d'audit complet
       </div>
     </div>
   </div>
+
+  <div class="card card--glow" style="position:relative;overflow:hidden">
+    <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:radial-gradient(circle,rgba(79,70,229,.15),transparent 70%);pointer-events:none"></div>
+    <div class="section-header">
+      <h2><i class="fas fa-camera-viewfinder" style="color:var(--accent);margin-right:8px"></i>Pilotage FaceAttend</h2>
+    </div>
+    <p style="color:var(--text-2);font-size:.88rem;line-height:1.65;margin-bottom:16px">
+      Les graphiques ci-dessus s’appuient sur les <strong>mêmes flux</strong> que la reconnaissance en séance : chaque point reflète une décision de présence (automatique ou manuelle), pas une estimation.
+    </p>
+    <ul style="margin:0;padding-left:1.1rem;color:var(--text-3);font-size:.82rem;line-height:1.7">
+      <li>Barres empilées → comparer rapidement les cours les plus exposés aux absences.</li>
+      <li>Courbe rouge → détecter les pics après examens ou périodes creuses.</li>
+      <li>Polar → équilibre global présents / retards / absences / justifiés.</li>
+    </ul>
+  </div>
 </div>
 
-<!-- ── Recent Students at Risk ───────────────────────── -->
 {% if stats.at_risk_count > 0 %}
-<div class="card" style="border-color:rgba(255,77,109,.2)">
+<div class="card" style="border-color:rgba(220,38,38,.22)">
   <div class="section-header">
     <h2><i class="fas fa-triangle-exclamation" style="color:var(--danger);margin-right:8px"></i>Alertes décrochage</h2>
     <a href="{{ url_for('admin.at_risk') }}" class="btn btn--sm btn--ghost">Voir tout</a>
@@ -104,11 +191,35 @@
 {% block extra_js %}
 <script>
 fetch('/admin/api/stats')
-  .then(r => r.json())
-  .then(data => {
-    const labels = data.courses.map(c => c.course);
-    const values = data.courses.map(c => c.rate);
-    window.renderAttendanceChart('attendanceChart', labels, values);
+  .then(function (r) { return r.json(); })
+  .then(function (data) {
+    var stackedEl = document.getElementById('stackedChartEmpty');
+    if (data.courses && data.courses.length) {
+      window.renderCourseStackedChart('stackedCourseChart', data.courses);
+    } else if (stackedEl) {
+      stackedEl.hidden = false;
+      var c = document.getElementById('stackedCourseChart');
+      if (c) c.style.display = 'none';
+    }
+
+    if (data.absence_trend) {
+      window.renderAbsenceTrendChart(
+        'absenceTrendChart',
+        data.absence_trend.labels,
+        data.absence_trend.counts
+      );
+    }
+
+    var polarEmpty = document.getElementById('statusPolarEmpty');
+    var polar = window.renderStatusPolarChart('statusPolarChart', data.status_mix || {});
+    if (!polar && polarEmpty) {
+      polarEmpty.hidden = false;
+      var pc = document.getElementById('statusPolarChart');
+      if (pc) pc.style.display = 'none';
+    }
+  })
+  .catch(function (e) {
+    console.warn('[FaceAttend] stats chart', e);
   });
 </script>
 {% endblock %}

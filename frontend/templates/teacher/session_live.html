@@ -12,7 +12,7 @@
         <div class="live-dot"></div>
         <span style="font-family:var(--font-mono);font-size:.8rem;color:var(--accent)">LIVE</span>
         <span style="font-size:.85rem;color:var(--text-2);margin-left:4px">
-          {{ session.course.name }} — {{ session.room or 'Salle non définie' }}
+          {{ session.course.name }} — {{ session.room or session.course.room or 'Salle non définie' }}
         </span>
         <span style="margin-left:auto;font-family:var(--font-mono);font-size:.75rem;color:var(--text-3)">
           Séance #{{ session.id }}
@@ -20,9 +20,10 @@
       </div>
 
       {% if not session.is_closed %}
-      <img src="{{ url_for('camera.video_stream', session_id=session.id) }}"
+      <img id="video-feed"
+           src="{{ url_for('camera.video_stream', session_id=session.id) }}"
            class="video-feed" alt="Flux caméra"
-           onerror="this.src='';this.style.display='none';document.getElementById('cam-err').style.display='flex'"/>
+           onerror="document.getElementById('video-feed').style.display='none';document.getElementById('cam-err').style.display='flex'"/>
       <div id="cam-err" style="display:none;align-items:center;justify-content:center;height:240px;flex-direction:column;gap:8px;color:var(--text-3)">
         <i class="fas fa-camera-slash" style="font-size:2rem"></i>
         <span style="font-size:.85rem">Caméra non disponible — Mode manuel actif</span>
@@ -37,6 +38,8 @@
 
     <!-- Stats bar -->
     <div class="card" style="margin-bottom:16px;padding:16px 20px">
+      {% set total_att = session.attendances.count() %}
+      {% set pct = (session.present_count / total_att * 100)|round|int if total_att > 0 else 0 %}
       <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
         <div style="text-align:center">
           <div style="font-family:var(--font-head);font-size:1.6rem;color:var(--accent)" id="stat-present">{{ session.present_count }}</div>
@@ -47,20 +50,16 @@
           <div style="font-size:.72rem;color:var(--text-2)">ABSENTS</div>
         </div>
         <div style="text-align:center">
-          <div style="font-family:var(--font-head);font-size:1.6rem;color:var(--text-2)" id="stat-total">{{ session.attendances.count() }}</div>
+          <div style="font-family:var(--font-head);font-size:1.6rem;color:var(--text-2)" id="stat-total">{{ total_att }}</div>
           <div style="font-size:.72rem;color:var(--text-2)">TOTAL</div>
         </div>
         <div style="flex:1;min-width:160px">
           <div style="display:flex;justify-content:space-between;margin-bottom:6px">
             <span style="font-size:.75rem;color:var(--text-2)">Taux de présence</span>
-            <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--accent)" id="presence-pct">
-              {% if session.attendances.count() > 0 %}{{ (session.present_count / session.attendances.count() * 100)|round|int }}%{% else %}0%{% endif %}
-            </span>
+            <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--accent)" id="presence-pct">{{ pct }}%</span>
           </div>
           <div class="progress">
-            <div class="progress__bar" id="presence-bar"
-                 style="width:{% if session.attendances.count() > 0 %}{{ (session.present_count / session.attendances.count() * 100)|round|int }}{% else %}0{% endif %}%">
-            </div>
+            <div class="progress__bar" id="presence-bar" style="width:{{ pct }}%"></div>
           </div>
         </div>
 
@@ -83,47 +82,151 @@
   <div class="card" style="padding:0;height:fit-content;max-height:680px;overflow:hidden;display:flex;flex-direction:column">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:.85rem;font-weight:600">Liste de présence</span>
-      <span class="badge badge--teacher">Temps réel</span>
+      <span id="sync-badge" class="badge" style="background:rgba(217,119,6,.14);color:#b45309">⏳ Sync...</span>
     </div>
-    <div style="overflow-y:auto;flex:1">
+    <div style="overflow-y:auto;flex:1" id="attendance-list">
       {% for student in students %}
       {% set att = attendances.get(student.id) %}
-      <div class="presence-item presence-item--{{ att.status.value if att else 'absent' }}"
+      {% set status = att.status.value if att else 'absent' %}
+      <div class="presence-item presence-item--{{ status }}"
            data-student="{{ student.id }}"
-           style="margin:6px 10px;padding:10px 12px">
-        <div class="avatar" style="width:30px;height:30px;font-size:.75rem">
-          {{ student.first_name[0] }}{{ student.last_name[0] }}
+           style="margin:6px 10px;padding:10px 12px;display:flex;align-items:center;gap:10px;border-radius:var(--radius)">
+        <div class="avatar" style="width:30px;height:30px;font-size:.75rem;flex-shrink:0">
+          {{ student.first_name[0]|upper }}{{ student.last_name[0]|upper }}
         </div>
-        <div style="flex:1;overflow:hidden">
+        <div style="flex:1;overflow:hidden;min-width:0">
           <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
             {{ student.full_name }}
           </div>
-          <div style="font-family:var(--font-mono);font-size:.68rem;color:var(--text-3)">
+          <div class="row-meta" style="font-family:var(--font-mono);font-size:.68rem;color:var(--text-3)">
             {{ student.student_number }}
             {% if att and att.detected_at %}
-              · <span class="detect-time">{{ att.detected_at.strftime('%H:%M') }}</span>
+              · <span class="detect-time">{{ att.detected_at.strftime('%H:%M:%S') }}</span>
               {% if att.confidence %} · <span class="confidence">{{ (att.confidence * 100)|round|int }}%</span>{% endif %}
             {% endif %}
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-          <span class="badge badge--{{ att.status.value if att else 'absent' }} status-badge">
-            {{ (att.status.value if att else 'absent')|capitalize }}
-          </span>
-        </div>
+        <span class="badge badge--{{ status }} status-badge" style="font-size:.7rem;flex-shrink:0">
+          {{ status|capitalize }}
+        </span>
       </div>
       {% endfor %}
     </div>
   </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 {% if not session.is_closed %}
 <script>
-  // Start camera encoding cache + start live polling
-  fetch('/api/camera/start/{{ session.id }}', { method: 'POST' });
-  window.startLivePolling({{ session.id }}, 3000);
+const SESSION_ID = {{ session.id }};
+
+// ── 1. Démarrer la caméra ──────────────────────────────────
+fetch('/api/camera/start/' + SESSION_ID, { method: 'POST' })
+  .catch(function(e) { console.warn('[Camera]', e); });
+
+// ── 2. Mettre à jour une ligne individuelle ────────────────
+function updateRow(att) {
+  var row = document.querySelector('[data-student="' + att.student_id + '"]');
+  if (!row) return;
+
+  // Couleur de fond
+  row.className = 'presence-item presence-item--' + att.status;
+  row.style.cssText = 'margin:6px 10px;padding:10px 12px;display:flex;align-items:center;gap:10px;border-radius:var(--radius)';
+
+  // Badge statut
+  var badge = row.querySelector('.status-badge');
+  if (badge) {
+    badge.className   = 'badge badge--' + att.status + ' status-badge';
+    badge.style.cssText = 'font-size:.7rem;flex-shrink:0';
+    badge.textContent = att.status.charAt(0).toUpperCase() + att.status.slice(1);
+  }
+
+  // Heure de détection
+  if (att.detected_at) {
+    var d   = new Date(att.detected_at);
+    var hms = [d.getHours(), d.getMinutes(), d.getSeconds()]
+                .map(function(n){ return String(n).padStart(2,'0'); }).join(':');
+    var meta   = row.querySelector('.row-meta');
+    var timeEl = row.querySelector('.detect-time');
+    if (timeEl) {
+      timeEl.textContent = hms;
+    } else if (meta) {
+      var sp = document.createElement('span');
+      sp.className   = 'detect-time';
+      sp.textContent = hms;
+      meta.appendChild(document.createTextNode(' · '));
+      meta.appendChild(sp);
+    }
+  }
+
+  // Confiance
+  if (att.confidence) {
+    var confEl = row.querySelector('.confidence');
+    var pct    = Math.round(att.confidence * 100) + '%';
+    if (confEl) {
+      confEl.textContent = pct;
+    } else {
+      var meta2 = row.querySelector('.row-meta');
+      if (meta2) {
+        var sp2 = document.createElement('span');
+        sp2.className   = 'confidence';
+        sp2.textContent = pct;
+        meta2.appendChild(document.createTextNode(' · '));
+        meta2.appendChild(sp2);
+      }
+    }
+  }
+}
+
+// ── 3. Mettre à jour les compteurs ────────────────────────
+function updateCounters(data) {
+  var present = data.present || 0;
+  var absent  = data.absent  || 0;
+  var late    = data.late    || 0;
+  var total   = data.total   || (present + absent + late);
+
+  var elP   = document.getElementById('stat-present');
+  var elA   = document.getElementById('stat-absent');
+  var elT   = document.getElementById('stat-total');
+  var bar   = document.getElementById('presence-bar');
+  var pctEl = document.getElementById('presence-pct');
+
+  if (elP) elP.textContent = present;
+  if (elA) elA.textContent = absent;
+  if (elT) elT.textContent = total;
+
+  var pct = total > 0 ? Math.round((present + late) / total * 100) : 0;
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (bar)   bar.style.width   = pct + '%';
+}
+
+// ── 4. Polling toutes les 2 secondes ──────────────────────
+function poll() {
+  fetch('/api/attendance/session/' + SESSION_ID + '/live')
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      updateCounters(data);
+      if (data.attendances) {
+        data.attendances.forEach(updateRow);
+      }
+      var b = document.getElementById('sync-badge');
+      if (b) { b.textContent = '🟢 En direct'; b.style.cssText = 'background:rgba(37,99,235,.12);color:var(--accent)'; }
+    })
+    .catch(function(e) {
+      console.warn('[Poll]', e);
+      var b = document.getElementById('sync-badge');
+      if (b) { b.textContent = '🔴 Erreur'; b.style.cssText = 'background:rgba(220,38,38,.12);color:var(--danger)'; }
+    });
+}
+
+// Appel immédiat + toutes les 2 secondes
+poll();
+setInterval(poll, 2000);
 </script>
 {% endif %}
 {% endblock %}

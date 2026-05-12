@@ -1,0 +1,67 @@
+<!-- ═══════════════════════════════════════════════════════
+     FICHIER 1 : frontend/templates/teacher/evaluations.html
+═══════════════════════════════════════════════════════ -->
+{% extends "base.html" %}
+{% block title %}Mes Évaluations{% endblock %}
+{% block page_title %}Fiches d'Évaluation{% endblock %}
+{% block content %}
+<div class="section-header">
+  <h2>Mes fiches</h2>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <form method="GET" style="display:flex;gap:8px">
+      <select name="course_id" class="form-control" style="width:180px;padding:7px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.83rem" onchange="this.form.submit()">
+        <option value="">Tous les cours</option>
+        {% for c in courses %}<option value="{{ c.id }}" {% if selected_course == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+      <select name="statut" class="form-control" style="width:140px;padding:7px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.83rem" onchange="this.form.submit()">
+        <option value="">Tous statuts</option>
+        <option value="brouillon" {% if selected_statut=='brouillon' %}selected{% endif %}>Brouillon</option>
+        <option value="envoyee"   {% if selected_statut=='envoyee'   %}selected{% endif %}>Envoyée</option>
+        <option value="archivee"  {% if selected_statut=='archivee'  %}selected{% endif %}>Archivée</option>
+      </select>
+    </form>
+    <a href="{{ url_for('teacher.evaluation_new') }}" class="btn btn--primary btn--sm">
+      <i class="fas fa-plus"></i> Nouvelle fiche
+    </a>
+  </div>
+</div>
+
+<div class="card" style="padding:0">
+  <table>
+    <thead><tr><th>Étudiant</th><th>Cours</th><th>Note</th><th>Mention</th><th>Statut</th><th>Date</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for f in fiches %}
+    <tr>
+      <td><strong>{{ f.student.full_name }}</strong><br><span style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-3)">{{ f.student.student_number }}</span></td>
+      <td>{{ f.course.name }}<br><code style="font-size:.7rem;color:var(--accent-2)">{{ f.course.code }}</code></td>
+      <td style="font-family:var(--font-head);font-size:1.1rem;color:var(--accent)">{{ f.note_globale }}<span style="font-size:.7rem;color:var(--text-3)">/20</span></td>
+      <td>
+        {% set m = f.mention %}
+        <span style="font-size:.75rem;font-weight:600;color:{{ m[1] }}">{{ m[0] }}</span>
+      </td>
+      <td>
+        {% if f.statut.value == 'brouillon' %}<span class="badge" style="background:rgba(217,119,6,.14);color:#b45309"><i class="fas fa-pencil"></i> Brouillon</span>
+        {% elif f.statut.value == 'envoyee' %}<span class="badge badge--present"><i class="fas fa-paper-plane"></i> Envoyée</span>
+        {% else %}<span class="badge" style="background:rgba(150,150,150,.15);color:#aaa"><i class="fas fa-archive"></i> Archivée</span>{% endif %}
+      </td>
+      <td style="font-size:.8rem;color:var(--text-3)">{{ f.sent_at.strftime('%d/%m/%Y') if f.sent_at else f.created_at.strftime('%d/%m/%Y') }}</td>
+      <td style="display:flex;gap:6px">
+        {% if f.statut.value == 'brouillon' %}
+        <a href="{{ url_for('teacher.evaluation_edit', eval_id=f.id) }}" class="btn btn--sm btn--ghost"><i class="fas fa-pen"></i></a>
+        <form method="POST" action="{{ url_for('teacher.evaluation_delete', eval_id=f.id) }}" onsubmit="return confirm('Supprimer ce brouillon ?')">
+          <button type="submit" class="btn btn--sm btn--danger"><i class="fas fa-trash"></i></button>
+        </form>
+        {% else %}
+        <span style="font-size:.78rem;color:var(--text-3);padding:6px">Envoyée</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:40px">
+      Aucune fiche — <a href="{{ url_for('teacher.evaluation_new') }}" style="color:var(--accent)">créer la première</a>
+    </td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

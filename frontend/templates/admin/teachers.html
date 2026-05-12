@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Professeurs{% endblock %}
+{% block page_title %}Gestion des Professeurs{% endblock %}
+
+{% block content %}
+<div class="section-header">
+  <h2>Liste des professeurs</h2>
+  <div style="display:flex;gap:8px">
+    <form method="GET" style="display:flex;gap:8px">
+      <div class="input-icon-wrap" style="flex:1">
+        <i class="fas fa-search"></i>
+        <input type="text" name="q" value="{{ search }}" placeholder="Rechercher…"
+               style="padding:8px 12px 8px 36px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.85rem;outline:none;min-width:220px"/>
+      </div>
+      <button type="submit" class="btn btn--ghost btn--sm">Rechercher</button>
+    </form>
+    <a href="{{ url_for('admin.create_teacher') }}" class="btn-create-pill">
+      <i class="fas fa-chalkboard-user"></i> Nouveau professeur
+    </a>
+  </div>
+</div>
+
+<div class="card" style="padding:0">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nom complet</th>
+          <th>Email</th>
+          <th>Département</th>
+          <th>Téléphone</th>
+          <th>Cours assignés</th>
+          <th>Actif</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for teacher in pagination.items %}
+        <tr>
+          <td><strong>{{ teacher.full_name }}</strong></td>
+          <td style="font-size:.82rem;color:var(--text-2)">{{ teacher.user.email }}</td>
+          <td>{{ teacher.department or '—' }}</td>
+          <td>{{ teacher.phone or '—' }}</td>
+          <td>
+            {% set nb = teacher.courses.count() %}
+            {% if nb > 0 %}
+              <span class="badge badge--present">{{ nb }} cours</span>
+            {% else %}
+              <span style="color:var(--text-3);font-size:.8rem">Aucun</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if teacher.user.is_active %}
+              <span class="badge badge--present"><i class="fas fa-check"></i> Actif</span>
+            {% else %}
+              <span class="badge badge--absent"><i class="fas fa-xmark"></i> Inactif</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('admin.teacher_detail', teacher_id=teacher.id) }}"
+               class="btn btn--sm btn--ghost">
+              <i class="fas fa-eye"></i> Détail
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align:center;color:var(--text-3);padding:40px">
+            Aucun professeur trouvé.
+            <a href="{{ url_for('admin.create_teacher') }}" style="color:var(--accent)">Créer le premier</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if pagination.pages > 1 %}
+<div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+  {% for page_num in pagination.iter_pages(left_edge=2,right_edge=2,left_current=2,right_current=3) %}
+    {% if page_num %}
+      <a href="?page={{ page_num }}{% if search %}&q={{ search }}{% endif %}"
+         class="btn btn--sm {% if page_num == pagination.page %}btn--primary{% else %}btn--ghost{% endif %}">
+        {{ page_num }}
+      </a>
+    {% else %}
+      <span style="color:var(--text-3);padding:6px">…</span>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

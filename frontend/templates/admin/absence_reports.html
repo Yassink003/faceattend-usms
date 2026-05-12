@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Rapports d'Absence{% endblock %}
+{% block page_title %}Rapports d'Absence{% endblock %}
+{% block content %}
+
+<div class="section-header">
+  <h2>Rapports reçus</h2>
+  <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap">
+    <select name="teacher_id" onchange="this.form.submit()" style="padding:7px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.83rem">
+      <option value="">Tous les profs</option>
+      {% for t in teachers %}<option value="{{ t.id }}" {% if f_teacher==t.id %}selected{% endif %}>{{ t.full_name }}</option>{% endfor %}
+    </select>
+    <select name="course_id" onchange="this.form.submit()" style="padding:7px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.83rem">
+      <option value="">Tous les cours</option>
+      {% for c in courses %}<option value="{{ c.id }}" {% if f_course==c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+    <select name="gravite" onchange="this.form.submit()" style="padding:7px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.83rem">
+      <option value="">Toutes gravités</option>
+      <option value="info"      {% if f_gravite=='info'      %}selected{% endif %}>ℹ Info</option>
+      <option value="attention" {% if f_gravite=='attention' %}selected{% endif %}>⚠ Attention</option>
+      <option value="critique"  {% if f_gravite=='critique'  %}selected{% endif %}>🔴 Critique</option>
+    </select>
+    <select name="statut" onchange="this.form.submit()" style="padding:7px 10px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);font-size:.83rem">
+      <option value="">Tous statuts</option>
+      <option value="nouveau" {% if f_statut=='nouveau' %}selected{% endif %}>Nouveau</option>
+      <option value="vu"      {% if f_statut=='vu'      %}selected{% endif %}>Vu</option>
+      <option value="traite"  {% if f_statut=='traite'  %}selected{% endif %}>Traité</option>
+    </select>
+  </form>
+</div>
+
+<div class="card" style="padding:0">
+  <table>
+    <thead>
+      <tr><th>Étudiant</th><th>Cours</th><th>Professeur</th><th>Absences</th><th>Retards</th><th>Taux présence</th><th>Gravité</th><th>Statut</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+    {% for r in pagination.items %}
+    {% set grav_color = '#dc2626' if r.gravite.value=='critique' else '#d97706' if r.gravite.value=='attention' else '#0ea5e9' %}
+    <tr>
+      <td><strong>{{ r.student.full_name }}</strong><br><span style="font-size:.72rem;font-family:var(--font-mono);color:var(--text-3)">{{ r.student.student_number }}</span></td>
+      <td><span style="font-size:.82rem">{{ r.course.name }}</span><br><code style="font-size:.68rem;color:var(--accent-2)">{{ r.course.code }}</code></td>
+      <td style="font-size:.82rem">{{ r.teacher.full_name }}</td>
+      <td style="text-align:center;font-family:var(--font-head);font-size:1.1rem;color:var(--danger)">{{ r.nb_absences }}<span style="font-size:.7rem;color:var(--text-3)">/{{ r.nb_seances }}</span></td>
+      <td style="text-align:center;font-family:var(--font-head);font-size:1.1rem;color:#d97706">{{ r.nb_retards }}</td>
+      <td>
+        {% set pct = (r.taux_presence * 100)|round|int %}
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:60px;height:6px;background:var(--bg-3);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:{{ pct }}%;background:{{ '#2563eb' if pct >= 75 else '#d97706' if pct >= 50 else '#dc2626' }};border-radius:3px"></div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:.78rem;color:var(--text-2)">{{ pct }}%</span>
+        </div>
+      </td>
+      <td><span style="font-size:.75rem;font-weight:700;color:{{ grav_color }}">
+        {% if r.gravite.value == 'critique' %}🔴 Critique
+        {% elif r.gravite.value == 'attention' %}⚠️ Attention
+        {% else %}ℹ️ Info{% endif %}
+      </span></td>
+      <td>
+        {% if r.statut.value == 'nouveau' %}<span class="badge badge--absent">Nouveau</span>
+        {% elif r.statut.value == 'vu' %}<span class="badge" style="background:rgba(217,119,6,.14);color:#b45309">Vu</span>
+        {% else %}<span class="badge badge--present">Traité</span>{% endif %}
+      </td>
+      <td>
+        <button onclick="document.getElementById('modal-{{ r.id }}').style.display='flex'"
+                class="btn btn--sm btn--ghost">
+          <i class="fas fa-eye"></i> Traiter
+        </button>
+        <!-- Modal -->
+        <div id="modal-{{ r.id }}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center">
+          <div style="background:var(--bg-1);border:1px solid var(--border-2);border-radius:var(--radius);padding:28px;max-width:480px;width:90%">
+            <h3 style="font-family:var(--font-head);color:var(--accent);margin-bottom:12px">Rapport — {{ r.student.full_name }}</h3>
+            {% if r.commentaire %}<p style="font-size:.85rem;color:var(--text-2);margin-bottom:16px">{{ r.commentaire }}</p>{% endif %}
+            <form method="POST" action="{{ url_for('admin.absence_report_treat', report_id=r.id) }}">
+              <textarea name="admin_note" placeholder="Note de traitement…" rows="3"
+                        style="width:100%;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text);padding:10px;font-size:.85rem;margin-bottom:12px">{{ r.admin_note or '' }}</textarea>
+              <div style="display:flex;gap:8px;justify-content:flex-end">
+                <button type="button" onclick="document.getElementById('modal-{{ r.id }}').style.display='none'" class="btn btn--ghost btn--sm">Annuler</button>
+                <button type="submit" name="action" value="vu" class="btn btn--ghost btn--sm"><i class="fas fa-eye"></i> Marquer Vu</button>
+                <button type="submit" name="action" value="traite" class="btn btn--primary btn--sm"><i class="fas fa-check"></i> Marquer Traité</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="9" style="text-align:center;color:var(--text-3);padding:40px">Aucun rapport d'absence reçu.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if pagination.pages > 1 %}
+<div style="display:flex;justify-content:center;gap:6px;margin-top:20px">
+  {% for p in pagination.iter_pages() %}
+    {% if p %}<a href="?page={{ p }}" class="btn btn--sm {% if p==pagination.page %}btn--primary{% else %}btn--ghost{% endif %}">{{ p }}</a>
+    {% else %}<span style="padding:6px;color:var(--text-3)">…</span>{% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

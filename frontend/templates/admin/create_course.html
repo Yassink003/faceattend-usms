@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Nouvelle Matière{% endblock %}
+{% block page_title %}Créer une Matière{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.form-grid .full-width { grid-column:1/-1; }
+.form-group { display:flex; flex-direction:column; gap:6px; }
+.form-group label { font-size:.8rem; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:.06em; }
+.form-group label .required { color:var(--danger); margin-left:2px; }
+.form-control { background:var(--bg-2); border:1px solid var(--border-2); border-radius:var(--radius); color:var(--text); font-size:.9rem; padding:10px 14px; outline:none; transition:border-color .2s,box-shadow .2s; width:100%; }
+.form-control:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--focus-ring); }
+.form-control::placeholder { color:var(--text-3); }
+select.form-control option { background:var(--bg-2); }
+.section-divider { grid-column:1/-1; display:flex; align-items:center; gap:12px; margin:8px 0 4px; }
+.section-divider span { font-family:var(--font-head); font-size:.8rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; white-space:nowrap; }
+.section-divider hr { flex:1; border:none; border-top:1px solid var(--border-2); }
+.hint { font-size:.75rem; color:var(--text-3); margin-top:2px; }
+.form-actions { display:flex; align-items:center; gap:12px; justify-content:flex-end; padding-top:8px; border-top:1px solid var(--border-2); margin-top:24px; }
+.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-2); font-size:.85rem; text-decoration:none; margin-bottom:20px; transition:color .2s; }
+.back-link:hover { color:var(--accent); }
+.code-preview { font-family:var(--font-mono); font-size:.8rem; color:var(--accent); background:rgba(37,99,235,.08); border:1px solid rgba(37,99,235,.2); border-radius:var(--radius); padding:8px 12px; margin-top:6px; letter-spacing:.05em; }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{{ url_for('admin.courses') }}" class="back-link">
+  <i class="fas fa-arrow-left"></i> Retour à la liste
+</a>
+
+<div class="card" style="max-width:860px;margin:0 auto">
+  <div style="padding:24px 28px 0">
+    <h2 style="font-family:var(--font-head);font-size:1.2rem;color:var(--accent);margin-bottom:4px">
+      <i class="fas fa-book-open" style="margin-right:8px"></i>Nouvelle matière
+    </h2>
+    <p style="color:var(--text-3);font-size:.85rem">
+      Définissez la matière, sa salle et son enseignant responsable.
+    </p>
+  </div>
+
+  <form method="POST" action="{{ url_for('admin.create_course') }}" style="padding:24px 28px">
+    <div class="form-grid">
+
+      <!-- Informations -->
+      <div class="section-divider">
+        <span><i class="fas fa-book" style="margin-right:6px"></i>Informations</span><hr>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Intitulé de la matière <span class="required">*</span></label>
+        <input name="name" id="course-name" class="form-control"
+               placeholder="ex : Algorithmique et Structures de Données"
+               value="{{ form_data.name if form_data else '' }}"
+               oninput="autoCode(this.value)" required>
+      </div>
+
+      <div class="form-group">
+        <label>Code matière <span class="required">*</span></label>
+        <input name="code" id="course-code" class="form-control"
+               placeholder="ex : ASD101" pattern="[A-Za-z0-9\-]+"
+               value="{{ form_data.code if form_data else '' }}" required>
+        <span class="hint">Unique — généré automatiquement, modifiable</span>
+        <div class="code-preview" id="code-preview">—</div>
+      </div>
+
+      <div class="form-group">
+        <label>Crédits</label>
+        <select name="credits" class="form-control">
+          {% for c in [1,2,3,4,5,6] %}
+          <option value="{{ c }}" {% if form_data and form_data.credits == c|string %}selected{% elif not form_data and c == 3 %}selected{% endif %}>
+            {{ c }} crédit{{ 's' if c > 1 else '' }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Description</label>
+        <textarea name="description" class="form-control" rows="3"
+                  placeholder="Description optionnelle de la matière…">{{ form_data.description if form_data else '' }}</textarea>
+      </div>
+
+      <!-- Salle -->
+      <div class="section-divider">
+        <span><i class="fas fa-door-open" style="margin-right:6px"></i>Salle</span><hr>
+      </div>
+
+      <div class="form-group">
+        <label>Salle associée <span class="required">*</span></label>
+        <input name="room" class="form-control"
+               placeholder="ex : Amphi A, Salle 204, Labo Info 1"
+               value="{{ form_data.room if form_data else '' }}" required>
+        <span class="hint">Salle où se déroule habituellement ce cours</span>
+      </div>
+
+      <div class="form-group">
+        <label>Statut</label>
+        <select name="is_active" class="form-control">
+          <option value="1" {% if not form_data or form_data.is_active != '0' %}selected{% endif %}>Actif</option>
+          <option value="0" {% if form_data and form_data.is_active == '0' %}selected{% endif %}>Inactif</option>
+        </select>
+      </div>
+
+      <!-- Enseignant -->
+      <div class="section-divider">
+        <span><i class="fas fa-chalkboard-user" style="margin-right:6px"></i>Enseignant responsable</span><hr>
+      </div>
+
+      <div class="form-group full-width">
+        <label>Assigner un professeur <span class="required">*</span></label>
+        {% if teachers %}
+        <select name="teacher_id" class="form-control" required>
+          <option value="" disabled {% if not form_data %}selected{% endif %}>Choisir un professeur…</option>
+          {% for t in teachers %}
+          <option value="{{ t.id }}"
+            {% if form_data and form_data.teacher_id == t.id|string %}selected{% endif %}>
+            {{ t.full_name }}{% if t.department %} — {{ t.department }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <div style="padding:12px;background:var(--bg-2);border:1px solid var(--border-2);border-radius:var(--radius);color:var(--text-3);font-size:.85rem">
+          <i class="fas fa-triangle-exclamation" style="color:#d97706;margin-right:6px"></i>
+          Aucun professeur en BDD —
+          <a href="{{ url_for('admin.create_teacher') }}" style="color:var(--accent)">créez un professeur d'abord</a>.
+        </div>
+        <input type="hidden" name="teacher_id" value="">
+        {% endif %}
+      </div>
+
+      <!-- Étudiants inscrits -->
+      {% if students %}
+      <div class="section-divider">
+        <span><i class="fas fa-users" style="margin-right:6px"></i>Étudiants inscrits</span><hr>
+      </div>
+      <div class="full-width">
+        <p class="hint" style="margin-bottom:10px">
+          Sélectionnez les étudiants à inscrire immédiatement (optionnel).
+        </p>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button type="button" class="btn btn--ghost btn--sm" onclick="selectAll(true)">
+            <i class="fas fa-check-double"></i> Tout sélectionner
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" onclick="selectAll(false)">
+            <i class="fas fa-xmark"></i> Tout désélectionner
+          </button>
+        </div>
+        <div style="max-height:260px;overflow-y:auto;border:1px solid var(--border-2);border-radius:var(--radius);padding:8px">
+          {% for s in students %}
+          <label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--radius);cursor:pointer;transition:background .15s">
+            <input type="checkbox" name="student_ids" value="{{ s.id }}"
+                   class="student-cb" style="accent-color:var(--accent);width:15px;height:15px;flex-shrink:0">
+            <div style="display:flex;flex:1;align-items:center;justify-content:space-between;min-width:0">
+              <span style="font-size:.85rem;color:var(--text)">{{ s.full_name }}</span>
+              <code style="font-size:.75rem;color:var(--accent-2);font-family:var(--font-mono);margin-left:8px;flex-shrink:0">{{ s.student_number }}</code>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('admin.courses') }}" class="btn btn--ghost">
+        <i class="fas fa-xmark"></i> Annuler
+      </a>
+      <button type="submit" class="btn btn--primary" {% if not teachers %}disabled title="Créez d'abord un professeur"{% endif %}>
+        <i class="fas fa-book-open"></i> Créer la matière
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-génération du code depuis l'intitulé
+function autoCode(name) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  let code = words.map(w => w[0].toUpperCase()).join('').substring(0, 4);
+  const num = Math.floor(100 + Math.random() * 900);
+  const full = code + num;
+  const codeInput = document.getElementById('course-code');
+  const preview   = document.getElementById('code-preview');
+  if (codeInput.value === '' || codeInput.dataset.auto === '1') {
+    codeInput.value = full;
+    codeInput.dataset.auto = '1';
+  }
+  preview.textContent = codeInput.value || '—';
+}
+document.getElementById('course-code').addEventListener('input', function() {
+  this.dataset.auto = '';
+  document.getElementById('code-preview').textContent = this.value || '—';
+});
+// Tout sélectionner / désélectionner
+function selectAll(state) {
+  document.querySelectorAll('.student-cb').forEach(cb => cb.checked = state);
+}
+</script>
+{% endblock %}
