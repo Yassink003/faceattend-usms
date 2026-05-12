@@ -4,186 +4,38 @@
 
 {% block extra_css %}
 <style>
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-  .form-grid .full-width { grid-column: 1 / -1; }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .form-group label {
-    font-size: .8rem;
-    font-weight: 600;
-    color: var(--text-2);
-    text-transform: uppercase;
-    letter-spacing: .06em;
-  }
-  .form-group label span.required {
-    color: var(--danger);
-    margin-left: 2px;
-  }
-  .form-control {
-    background: var(--bg-2);
-    border: 1px solid var(--border-2);
-    border-radius: var(--radius);
-    color: var(--text);
-    font-family: var(--font-body);
-    font-size: .9rem;
-    padding: 10px 14px;
-    outline: none;
-    transition: border-color .2s, box-shadow .2s;
-    width: 100%;
-  }
-  .form-control:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--focus-ring);
-  }
-  .form-control::placeholder { color: var(--text-3); }
-  select.form-control option { background: var(--bg-2); }
-
-  .section-divider {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 8px 0 4px;
-  }
-  .section-divider span {
-    font-family: var(--font-head);
-    font-size: .8rem;
-    font-weight: 700;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    white-space: nowrap;
-  }
-  .section-divider hr {
-    flex: 1;
-    border: none;
-    border-top: 1px solid var(--border-2);
-  }
-
-  .courses-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 10px;
-    margin-top: 4px;
-  }
-  .course-checkbox {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    background: var(--bg-2);
-    border: 1px solid var(--border-2);
-    border-radius: var(--radius);
-    padding: 12px 14px;
-    cursor: pointer;
-    transition: border-color .2s, background .2s;
-  }
-  .course-checkbox:hover {
-    border-color: rgba(37,99,235,.35);
-    background: var(--bg-3);
-  }
-  .course-checkbox input[type="checkbox"] {
-    accent-color: var(--accent);
-    width: 16px; height: 16px;
-    margin-top: 2px;
-    flex-shrink: 0;
-    cursor: pointer;
-  }
-  .course-checkbox input[type="checkbox"]:checked ~ .course-info {
-    color: var(--accent);
-  }
-  .course-checkbox-wrap:has(input:checked) {
-    border-color: var(--accent);
-    background: rgba(37,99,235,.06);
-  }
-  .course-info { display: flex; flex-direction: column; gap: 2px; }
-  .course-info strong { font-size: .85rem; color: var(--text); }
-  .course-info small  { font-size: .75rem; color: var(--text-3); }
-  .course-code {
-    font-family: var(--font-mono);
-    font-size: .7rem;
-    color: var(--accent-2);
-    background: rgba(14,165,233,.1);
-    padding: 1px 6px;
-    border-radius: 4px;
-    align-self: flex-start;
-    margin-top: 3px;
-  }
-
-  .hint {
-    font-size: .75rem;
-    color: var(--text-3);
-    margin-top: 2px;
-  }
-
-  .form-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    justify-content: flex-end;
-    padding-top: 8px;
-    border-top: 1px solid var(--border-2);
-    margin-top: 8px;
-  }
-
-  .password-wrap {
-    position: relative;
-  }
-  .password-wrap .form-control {
-    padding-right: 44px;
-  }
-  .password-toggle {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--text-3);
-    cursor: pointer;
-    font-size: .9rem;
-    padding: 4px;
-    transition: color .2s;
-  }
-  .password-toggle:hover { color: var(--accent); }
-
-  .strength-bar {
-    height: 3px;
-    border-radius: 2px;
-    background: var(--bg-3);
-    margin-top: 6px;
-    overflow: hidden;
-  }
-  .strength-bar-inner {
-    height: 100%;
-    border-radius: 2px;
-    transition: width .3s, background .3s;
-    width: 0%;
-  }
-  .strength-label {
-    font-size: .72rem;
-    margin-top: 3px;
-    color: var(--text-3);
-  }
-
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-2);
-    font-size: .85rem;
-    text-decoration: none;
-    margin-bottom: 20px;
-    transition: color .2s;
-  }
-  .back-link:hover { color: var(--accent); }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .form-grid .full-width { grid-column:1/-1; }
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+  .form-group label { font-size:.8rem; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:.06em; }
+  .form-group label span.required { color:var(--danger); margin-left:2px; }
+  .form-control { background:var(--bg-2); border:1px solid var(--border-2); border-radius:var(--radius); color:var(--text); font-family:var(--font-body); font-size:.9rem; padding:10px 14px; outline:none; transition:border-color .2s,box-shadow .2s; width:100%; }
+  .form-control:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(37,99,235,.15); }
+  .form-control::placeholder { color:var(--text-3); }
+  select.form-control option { background:var(--bg-2); }
+  .section-divider { grid-column:1/-1; display:flex; align-items:center; gap:12px; margin:8px 0 4px; }
+  .section-divider span { font-family:var(--font-head); font-size:.8rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; white-space:nowrap; }
+  .section-divider hr { flex:1; border:none; border-top:1px solid var(--border-2); }
+  .courses-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-top:4px; }
+  .course-checkbox { display:flex; align-items:flex-start; gap:10px; background:var(--bg-2); border:1px solid var(--border-2); border-radius:var(--radius); padding:12px 14px; cursor:pointer; transition:border-color .2s,background .2s; }
+  .course-checkbox:hover { border-color:rgba(37,99,235,.35); background:var(--bg-3); }
+  .course-checkbox input[type="checkbox"] { accent-color:var(--accent); width:16px; height:16px; margin-top:2px; flex-shrink:0; cursor:pointer; }
+  .course-info { display:flex; flex-direction:column; gap:2px; }
+  .course-info strong { font-size:.85rem; color:var(--text); }
+  .course-info small { font-size:.75rem; color:var(--text-3); }
+  .course-code { font-family:var(--font-mono); font-size:.7rem; color:var(--accent-2); background:rgba(14,165,233,.1); padding:1px 6px; border-radius:4px; align-self:flex-start; margin-top:3px; }
+  .hint { font-size:.75rem; color:var(--text-3); margin-top:2px; }
+  .form-actions { display:flex; align-items:center; gap:12px; justify-content:flex-end; padding-top:8px; border-top:1px solid var(--border-2); margin-top:8px; }
+  .password-wrap { position:relative; }
+  .password-wrap .form-control { padding-right:44px; }
+  .password-toggle { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-3); cursor:pointer; font-size:.9rem; padding:4px; transition:color .2s; }
+  .password-toggle:hover { color:var(--accent); }
+  .strength-bar { height:3px; border-radius:2px; background:var(--bg-3); margin-top:6px; overflow:hidden; }
+  .strength-bar-inner { height:100%; border-radius:2px; transition:width .3s,background .3s; width:0%; }
+  .strength-label { font-size:.72rem; margin-top:3px; color:var(--text-3); }
+  .pwd-rule { font-size:.75rem; color:var(--text-3); transition:color .2s; }
+  .back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-2); font-size:.85rem; text-decoration:none; margin-bottom:20px; transition:color .2s; }
+  .back-link:hover { color:var(--accent); }
 </style>
 {% endblock %}
 
@@ -202,14 +54,14 @@
     </p>
   </div>
 
-  <form method="POST" action="{{ url_for('admin.create_student') }}" style="padding:24px 28px">
+  <form method="POST" action="{{ url_for('admin.create_student') }}"
+        id="create-student-form" style="padding:24px 28px">
 
     <div class="form-grid">
 
-      <!-- ── Identité ─────────────────────────────────── -->
+      <!-- Identité -->
       <div class="section-divider">
-        <span><i class="fas fa-id-card" style="margin-right:6px"></i>Identité</span>
-        <hr>
+        <span><i class="fas fa-id-card" style="margin-right:6px"></i>Identité</span><hr>
       </div>
 
       <div class="form-group">
@@ -237,8 +89,7 @@
         <select name="program" class="form-control" required>
           <option value="" disabled {% if not form_data %}selected{% endif %}>Choisir…</option>
           {% for p in ['INFO', 'MATH', 'PHYS', 'CHIM', 'BIO', 'ECO', 'DROIT', 'LETTRES'] %}
-          <option value="{{ p }}"
-            {% if form_data and form_data.program == p %}selected{% endif %}>{{ p }}</option>
+          <option value="{{ p }}" {% if form_data and form_data.program == p %}selected{% endif %}>{{ p }}</option>
           {% endfor %}
         </select>
       </div>
@@ -248,8 +99,7 @@
         <select name="year_of_study" class="form-control" required>
           <option value="" disabled {% if not form_data %}selected{% endif %}>Choisir…</option>
           {% for y in [1,2,3,4,5] %}
-          <option value="{{ y }}"
-            {% if form_data and form_data.year_of_study|string == y|string %}selected{% endif %}>
+          <option value="{{ y }}" {% if form_data and form_data.year_of_study|string == y|string %}selected{% endif %}>
             Année {{ y }}
           </option>
           {% endfor %}
@@ -262,10 +112,9 @@
                value="{{ form_data.group_name if form_data else '' }}">
       </div>
 
-      <!-- ── Compte de connexion ──────────────────────── -->
+      <!-- Compte de connexion -->
       <div class="section-divider">
-        <span><i class="fas fa-lock" style="margin-right:6px"></i>Compte de connexion</span>
-        <hr>
+        <span><i class="fas fa-lock" style="margin-right:6px"></i>Compte de connexion</span><hr>
       </div>
 
       <div class="form-group full-width">
@@ -276,45 +125,46 @@
         <span class="hint">Sera utilisé comme identifiant de connexion</span>
       </div>
 
-    <div class="form-group">
-         <label>Mot de passe <span class="required">*</span></label>
-         <div class="password-wrap">
+      <!-- Mot de passe -->
+      <div class="form-group">
+        <label>Mot de passe <span class="required">*</span></label>
+        <div class="password-wrap">
           <input name="password" id="pwd" type="password" class="form-control"
-              placeholder="Min. 8 caractères" oninput="checkStrength(this.value)" required>
+                 placeholder="Min. 8 caractères"
+                 oninput="checkStrength(this.value)" required>
           <button type="button" class="password-toggle" onclick="togglePwd('pwd', this)">
             <i class="fas fa-eye"></i>
           </button>
-         </div>
-         <div class="strength-bar"><div class="strength-bar-inner" id="strength-bar"></div></div>
-         <span class="strength-label" id="strength-label"></span>
-
-  <!-- Règles visuelles -->
-        <div id="pwd-rules" style="margin-top:10px;display:flex;flex-direction:column;gap:4px">
-          <span id="rule-length"  style="font-size:.75rem;color:var(--text-3);transition:color .2s">
-           <i class="fas fa-circle"></i> Au moins 8 caractères
-          </span>
-          <span id="rule-upper"   style="font-size:.75rem;color:var(--text-3);transition:color .2s">
-           <i class="fas fa-circle"></i> Une lettre majuscule (A–Z)
-          </span>
-          <span id="rule-lower"   style="font-size:.75rem;color:var(--text-3);transition:color .2s">
-           <i class="fas fa-circle"></i> Une lettre minuscule (a–z)
-          </span>
-          <span id="rule-digit"   style="font-size:.75rem;color:var(--text-3);transition:color .2s">
-           <i class="fas fa-circle"></i> Un chiffre (0–9)
-          </span>
-          <span id="rule-special" style="font-size:.75rem;color:var(--text-3);transition:color .2s">
-           <i class="fas fa-circle"></i> Un caractère spécial (@, #, !, ...)
-          </span>
-       </div>
-    </div>
-
-      <!-- ── Inscription aux cours ────────────────────── -->
-      {% if courses %}
-      <div class="section-divider">
-        <span><i class="fas fa-book-open" style="margin-right:6px"></i>Inscription aux cours</span>
-        <hr>
+        </div>
+        <div class="strength-bar"><div class="strength-bar-inner" id="strength-bar"></div></div>
+        <span class="strength-label" id="strength-label"></span>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px">
+          <span class="pwd-rule" id="rule-length"><i class="fas fa-circle"></i> Au moins 8 caractères</span>
+          <span class="pwd-rule" id="rule-upper"><i class="fas fa-circle"></i> Une lettre majuscule (A–Z)</span>
+          <span class="pwd-rule" id="rule-lower"><i class="fas fa-circle"></i> Une lettre minuscule (a–z)</span>
+          <span class="pwd-rule" id="rule-digit"><i class="fas fa-circle"></i> Un chiffre (0–9)</span>
+          <span class="pwd-rule" id="rule-special"><i class="fas fa-circle"></i> Un caractère spécial (@, #, !, ...)</span>
+        </div>
       </div>
 
+      <!-- Confirmer mot de passe — CHAMP MANQUANT DANS L'ORIGINAL -->
+      <div class="form-group">
+        <label>Confirmer le mot de passe <span class="required">*</span></label>
+        <div class="password-wrap">
+          <input name="password_confirm" id="pwd2" type="password" class="form-control"
+                 placeholder="Répéter le mot de passe" required>
+          <button type="button" class="password-toggle" onclick="togglePwd('pwd2', this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <span class="hint" id="pwd2-hint" style="min-height:16px"></span>
+      </div>
+
+      <!-- Inscription aux cours -->
+      {% if courses %}
+      <div class="section-divider">
+        <span><i class="fas fa-book-open" style="margin-right:6px"></i>Inscription aux cours</span><hr>
+      </div>
       <div class="full-width">
         <p class="hint" style="margin-bottom:10px">
           Sélectionnez les cours auxquels inscrire l'étudiant (optionnel — modifiable plus tard).
@@ -327,7 +177,7 @@
             <div class="course-info">
               <strong>{{ c.name }}</strong>
               <span class="course-code">{{ c.code }}</span>
-              <small>{{ c.teacher.full_name }} · {{ c.room or 'Salle N/A' }}</small>
+              <small>{{ c.teacher.full_name if c.teacher else '—' }} · {{ c.room or 'Salle N/A' }}</small>
             </div>
           </label>
           {% endfor %}
@@ -337,7 +187,6 @@
 
     </div><!-- /form-grid -->
 
-    <!-- ── Actions ─────────────────────────────────────── -->
     <div class="form-actions" style="margin-top:28px">
       <a href="{{ url_for('admin.students') }}" class="btn btn--ghost">
         <i class="fas fa-xmark"></i> Annuler
@@ -353,77 +202,88 @@
 
 {% block extra_js %}
 <script>
+  // ── Afficher / masquer mot de passe ──────────────────────
   function togglePwd(id, btn) {
-    const input = document.getElementById(id);
-    const isText = input.type === 'text';
+    var input  = document.getElementById(id);
+    var isText = input.type === 'text';
     input.type = isText ? 'password' : 'text';
     btn.querySelector('i').className = isText ? 'fas fa-eye' : 'fas fa-eye-slash';
   }
-  // ── Indicateur de force en temps réel ────────────────────
-  function checkStrength(val) {
-    const bar   = document.getElementById('strength-bar');
-    const label = document.getElementById('strength-label');
-    const rules = document.getElementById('pwd-rules');
 
-    const checks = {
+  // ── Indicateur de force ───────────────────────────────────
+  function checkStrength(val) {
+    var bar    = document.getElementById('strength-bar');
+    var label  = document.getElementById('strength-label');
+    var checks = {
       length:  val.length >= 8,
       upper:   /[A-Z]/.test(val),
       lower:   /[a-z]/.test(val),
       digit:   /[0-9]/.test(val),
-      special: /[^A-Za-z0-9]/.test(val),
+      special: /[^A-Za-z0-9]/.test(val)
     };
-
-    // Mettre à jour les indicateurs de règles
-    Object.keys(checks).forEach(key => {
-      const el = document.getElementById('rule-' + key);
+    Object.keys(checks).forEach(function(key) {
+      var el = document.getElementById('rule-' + key);
       if (!el) return;
       el.style.color = checks[key] ? 'var(--accent)' : 'var(--text-3)';
-      el.querySelector('i').className = checks[key]
-        ? 'fas fa-circle-check' : 'fas fa-circle';
+      el.querySelector('i').className = checks[key] ? 'fas fa-circle-check' : 'fas fa-circle';
     });
-
-    const score = Object.values(checks).filter(Boolean).length;
-    const levels = [
-      { pct: '0%',   color: 'transparent', text: '' },
-      { pct: '20%',  color: '#dc2626',     text: 'Très faible' },
-      { pct: '40%',  color: '#dc2626',     text: 'Faible' },
-      { pct: '60%',  color: '#d97706',     text: 'Moyen' },
-      { pct: '80%',  color: '#0ea5e9',     text: 'Bon' },
-      { pct: '100%', color: '#2563eb',     text: 'Fort ✓' },
+    var score  = Object.keys(checks).filter(function(k){ return checks[k]; }).length;
+    var levels = [
+      { pct:'0%',   color:'transparent', text:'' },
+      { pct:'20%',  color:'#dc2626',     text:'Très faible' },
+      { pct:'40%',  color:'#dc2626',     text:'Faible' },
+      { pct:'60%',  color:'#d97706',     text:'Moyen' },
+      { pct:'80%',  color:'#0ea5e9',     text:'Bon' },
+      { pct:'100%', color:'#2563eb',     text:'Fort ✓' }
     ];
-    const l = levels[score];
-    bar.style.width      = l.pct;
-    bar.style.background = l.color;
-    label.textContent    = l.text;
-    label.style.color    = l.color;
+    var l = levels[score];
+    if (bar)   { bar.style.width = l.pct; bar.style.background = l.color; }
+    if (label) { label.textContent = l.text; label.style.color = l.color; }
   }
 
   // ── Vérification confirmation en temps réel ───────────────
-  document.getElementById('pwd2').addEventListener('input', function() {
-    const pwd  = document.getElementById('pwd').value;
-    const match = this.value === pwd && this.value.length > 0;
-    this.style.borderColor = this.value.length === 0
-      ? 'var(--border-2)'
-      : match ? 'var(--accent)' : 'var(--danger)';
-  });
+  var pwd2Input = document.getElementById('pwd2');
+  if (pwd2Input) {
+    pwd2Input.addEventListener('input', function() {
+      var pwd  = document.getElementById('pwd');
+      var hint = document.getElementById('pwd2-hint');
+      if (!pwd) return;
+      var match = this.value === pwd.value && this.value.length > 0;
+      this.style.borderColor = this.value.length === 0
+        ? 'var(--border-2)'
+        : (match ? 'var(--accent)' : 'var(--danger)');
+      if (hint) {
+        hint.textContent = this.value.length === 0 ? ''
+          : (match ? '✓ Correspondent' : '✗ Ne correspondent pas');
+        hint.style.color = match ? 'var(--accent)' : 'var(--danger)';
+      }
+    });
+  }
 
-  // ── Validation avant soumission du formulaire ─────────────
-  document.querySelector('form').addEventListener('submit', function(e) {
-    const pwd  = document.getElementById('pwd').value;
-    const pwd2 = document.getElementById('pwd2').value;
-    const msgs = [];
+  // ── Validation à la soumission ────────────────────────────
+  var form = document.getElementById('create-student-form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      var pwd  = document.getElementById('pwd');
+      var pwd2 = document.getElementById('pwd2');
+      if (!pwd || !pwd2) return;
 
-    if (pwd.length < 8)              msgs.push("au moins 8 caractères");
-    if (!/[A-Z]/.test(pwd))          msgs.push("une majuscule");
-    if (!/[a-z]/.test(pwd))          msgs.push("une minuscule");
-    if (!/[0-9]/.test(pwd))          msgs.push("un chiffre");
-    if (!/[^A-Za-z0-9]/.test(pwd))   msgs.push("un caractère spécial");
-    if (pwd !== pwd2)                 msgs.push("les mots de passe doivent correspondre");
+      var pwdVal  = pwd.value;
+      var pwd2Val = pwd2.value;
+      var msgs    = [];
 
-    if (msgs.length > 0) {
-      e.preventDefault();
-      alert("Mot de passe invalide :\n• " + msgs.join("\n• "));
-    }
-  });
+      if (pwdVal.length < 8)             msgs.push("au moins 8 caractères");
+      if (!/[A-Z]/.test(pwdVal))         msgs.push("une majuscule");
+      if (!/[a-z]/.test(pwdVal))         msgs.push("une minuscule");
+      if (!/[0-9]/.test(pwdVal))         msgs.push("un chiffre");
+      if (!/[^A-Za-z0-9]/.test(pwdVal))  msgs.push("un caractère spécial");
+      if (pwdVal !== pwd2Val)            msgs.push("les mots de passe ne correspondent pas");
+
+      if (msgs.length > 0) {
+        e.preventDefault();
+        alert("Mot de passe invalide :\n• " + msgs.join("\n• "));
+      }
+    });
+  }
 </script>
 {% endblock %}
